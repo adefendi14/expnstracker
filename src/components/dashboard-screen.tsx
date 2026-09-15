@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowDownLeft, ArrowUpRight, PiggyBank, Plus, Wallet } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, Plus, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { EmptyState } from "@/components/empty-state";
 import { InstallBanner } from "@/components/install-banner";
+import { DashboardPiggySection } from "@/components/piggy-banks";
 import { useStore } from "@/lib/store";
 import {
   CATEGORY_LABELS,
@@ -90,22 +90,7 @@ export function DashboardScreen() {
       </div>
 
       <div className="px-4 md:px-8">
-        <article className="rounded-3xl bg-card p-5 ring-1 ring-foreground/8">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-sm font-medium">Progresso salvadanai</p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {formatEuroCompact(totals.piggyCurrent)} / {formatEuroCompact(totals.piggyTarget)} —{" "}
-                {totals.piggyPercent}%
-              </p>
-            </div>
-            <PiggyBank className="size-4 text-amber-700" />
-          </div>
-          <Progress value={totals.piggyPercent} className="mt-4" />
-          <p className="mt-3 text-xs text-muted-foreground">
-            Spese di questo mese: {formatEuro(totals.monthExpenses)}
-          </p>
-        </article>
+        <DashboardPiggySection />
       </div>
 
       {!hasAnything ? (
