@@ -2,7 +2,6 @@
 
 import { useMemo, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Lightbulb, Receipt, Scale, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +25,7 @@ import {
 } from "@/components/ui/sheet";
 import { EmptyState } from "@/components/empty-state";
 import { Field } from "@/components/field";
+import { ExpenseEditDialog, IdeaEditDialog, LedgerEditDialog } from "@/components/item-edit-dialogs";
 import { SegmentedControl } from "@/components/segmented-control";
 import { useStore } from "@/lib/store";
 import {
@@ -214,11 +214,11 @@ export function ListsScreen({
   initialKind?: ListKind;
 }) {
   const store = useStore();
-  const router = useRouter();
   const [kind, setKind] = useState<ListKind>(initialKind);
   const [status, setStatus] = useState<StatusFilter>("aperti");
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Row | null>(null);
+  const [editing, setEditing] = useState(false);
 
   const rows = useMemo(() => {
     const all: Row[] = [
@@ -254,12 +254,9 @@ export function ListsScreen({
     });
   }, [store.data, kind, status, query]);
 
-  function editHref(row: Row) {
-    if (row.kind === "ledger") {
-      return `/aggiungi?tipo=${row.item.direction}&id=${row.item.id}`;
-    }
-    if (row.kind === "expense") return `/aggiungi?tipo=spesa&id=${row.item.id}`;
-    return `/aggiungi?tipo=idea&id=${row.item.id}`;
+  function closePanels() {
+    setSelected(null);
+    setEditing(false);
   }
 
   return (
@@ -335,7 +332,10 @@ export function ListsScreen({
             <li key={`${row.kind}-${row.item.id}`}>
               <button
                 type="button"
-                onClick={() => setSelected(row)}
+                onClick={() => {
+                  setEditing(false);
+                  setSelected(row);
+                }}
                 className="flex w-full items-center gap-3 rounded-2xl bg-card px-4 py-3.5 text-left ring-1 ring-foreground/8"
               >
                 <RowPreview row={row} />
@@ -346,23 +346,30 @@ export function ListsScreen({
       )}
 
       {selected?.kind === "ledger" ? (
-        <LedgerAdjustDialog
-          item={selected.item}
-          open
-          onOpenChange={(open) => {
-            if (!open) setSelected(null);
-          }}
-          onEdit={() => {
-            const href = editHref(selected);
-            setSelected(null);
-            router.push(href);
-          }}
-        />
+        <>
+          <LedgerAdjustDialog
+            item={selected.item}
+            open={!editing}
+            onOpenChange={(open) => {
+              if (!open && !editing) setSelected(null);
+            }}
+            onEdit={() => setEditing(true)}
+          />
+          <LedgerEditDialog
+            key={selected.item.id}
+            item={selected.item}
+            open={editing}
+            onOpenChange={(open) => {
+              if (!open) closePanels();
+            }}
+          />
+        </>
       ) : (
+        <>
         <Sheet
-          open={Boolean(selected)}
+          open={Boolean(selected) && !editing}
           onOpenChange={(open) => {
-            if (!open) setSelected(null);
+            if (!open && !editing) setSelected(null);
           }}
         >
           <SheetContent side="bottom" className="rounded-t-3xl pb-[max(1.5rem,env(safe-area-inset-bottom))]">
@@ -411,11 +418,7 @@ export function ListsScreen({
                   <Button
                     className="h-11 rounded-2xl"
                     variant="outline"
-                    onClick={() => {
-                      const href = editHref(selected);
-                      setSelected(null);
-                      router.push(href);
-                    }}
+                    onClick={() => setEditing(true)}
                   >
                     Modifica
                   </Button>
@@ -448,6 +451,27 @@ export function ListsScreen({
             ) : null}
           </SheetContent>
         </Sheet>
+        {selected?.kind === "expense" ? (
+          <ExpenseEditDialog
+            key={selected.item.id}
+            item={selected.item}
+            open={editing}
+            onOpenChange={(open) => {
+              if (!open) closePanels();
+            }}
+          />
+        ) : null}
+        {selected?.kind === "idea" ? (
+          <IdeaEditDialog
+            key={selected.item.id}
+            item={selected.item}
+            open={editing}
+            onOpenChange={(open) => {
+              if (!open) closePanels();
+            }}
+          />
+        ) : null}
+        </>
       )}
     </div>
   );
