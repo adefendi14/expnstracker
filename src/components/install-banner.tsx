@@ -13,7 +13,11 @@ function isStandalone() {
 
 function subscribe(onChange: () => void) {
   window.addEventListener("storage", onChange);
-  return () => window.removeEventListener("storage", onChange);
+  const ready = window.setTimeout(onChange, 0);
+  return () => {
+    window.clearTimeout(ready);
+    window.removeEventListener("storage", onChange);
+  };
 }
 
 function getSnapshot() {

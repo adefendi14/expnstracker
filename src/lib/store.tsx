@@ -19,10 +19,10 @@ import {
 } from "@/lib/types";
 import { isThisMonth } from "@/lib/format";
 
-type StoreStatus = "loading" | "ready" | "error";
+type StoreStatus = "ready" | "error";
 
 type Snapshot = {
-  status: Exclude<StoreStatus, "loading">;
+  status: StoreStatus;
   errorMessage: string | null;
   data: AppData;
 };
@@ -125,10 +125,18 @@ function subscribe(listener: () => void) {
     listener();
   };
   window.addEventListener("storage", onStorage);
+  // Next.js 16 / React 19 does not always re-render after hydration when the
+  // server snapshot differs, unless the store notifies. Push a client read.
+  const ready = window.setTimeout(listener, 0);
   return () => {
+    window.clearTimeout(ready);
     listeners.delete(listener);
     window.removeEventListener("storage", onStorage);
   };
+}
+
+function getServerSnapshot(): Snapshot {
+  return serverSnapshot;
 }
 
 const serverSnapshot: Snapshot = {
@@ -136,14 +144,6 @@ const serverSnapshot: Snapshot = {
   errorMessage: null,
   data: emptyData(),
 };
-
-function emptySubscribe() {
-  return () => {};
-}
-
-function useHydrated() {
-  return useSyncExternalStore(emptySubscribe, () => true, () => false);
-}
 
 function nowIso() {
   return new Date().toISOString();
@@ -154,8 +154,7 @@ function createId() {
 }
 
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const hydrated = useHydrated();
-  const current = useSyncExternalStore(subscribe, readSnapshot, () => serverSnapshot);
+  const current = useSyncExternalStore(subscribe, readSnapshot, getServerSnapshot);
 
   const commit = useCallback((updater: (value: AppData) => AppData) => {
     const base = readSnapshot().data;
@@ -347,7 +346,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [current.data]);
 
   const value: StoreContextValue = {
-    status: hydrated ? current.status : "loading",
+    status: current.status,
     errorMessage: current.errorMessage,
     data: current.data,
     resetStorage,

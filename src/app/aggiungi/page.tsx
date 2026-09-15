@@ -12,7 +12,6 @@ function AddInner() {
   const id = params.get("id");
   const tipo = params.get("tipo");
 
-  if (status === "loading") return <ScreenSkeleton />;
   if (status === "error") {
     return <StorageError message={errorMessage ?? "Errore di lettura."} onReset={resetStorage} />;
   }

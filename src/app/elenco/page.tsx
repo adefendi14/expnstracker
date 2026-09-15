@@ -14,7 +14,6 @@ function ElencoInner() {
   const initialKind: ListKind =
     tipo === "debiti" || tipo === "crediti" || tipo === "spese" || tipo === "idee" ? tipo : "tutti";
 
-  if (status === "loading") return <ScreenSkeleton />;
   if (status === "error") {
     return <StorageError message={errorMessage ?? "Errore di lettura."} onReset={resetStorage} />;
   }
