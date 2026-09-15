@@ -77,6 +77,7 @@ type StoreContextValue = {
   addLedger: (entry: Omit<LedgerEntry, "id" | "createdAt" | "updatedAt">) => LedgerEntry;
   updateLedger: (id: string, patch: Partial<LedgerEntry>) => void;
   deleteLedger: (id: string) => void;
+  adjustLedger: (id: string, delta: number) => void;
   addExpense: (entry: Omit<Expense, "id" | "createdAt" | "updatedAt">) => Expense;
   updateExpense: (id: string, patch: Partial<Expense>) => void;
   deleteExpense: (id: string) => void;
@@ -394,6 +395,23 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [commitUser]
   );
 
+  const adjustLedger: StoreContextValue["adjustLedger"] = useCallback(
+    (id, delta) => {
+      commitUser((userId, data) => {
+        const currentItem = data.ledger.find((item) => item.id === id);
+        if (!currentItem) return;
+        const next = Math.max(0, Math.round((currentItem.amount + delta) * 100) / 100);
+        updateLedgerRow(userId, id, {
+          ...currentItem,
+          amount: next,
+          settled: delta > 0 ? false : currentItem.settled,
+          updatedAt: nowIso(),
+        });
+      });
+    },
+    [commitUser]
+  );
+
   const addExpense: StoreContextValue["addExpense"] = useCallback(
     (entry) => {
       const stamp = nowIso();
@@ -539,6 +557,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     addLedger,
     updateLedger,
     deleteLedger,
+    adjustLedger,
     addExpense,
     updateExpense,
     deleteExpense,
