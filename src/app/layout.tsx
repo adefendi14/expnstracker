@@ -1,12 +1,13 @@
 import type { Metadata, Viewport } from "next";
-import { Geist } from "next/font/google";
+import { Outfit } from "next/font/google";
 import { Providers } from "@/components/providers";
 import { withBase } from "@/lib/paths";
 import "./globals.css";
 
-const geist = Geist({
+const outfit = Outfit({
   variable: "--font-sans",
   subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -46,7 +47,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="it" className={`${geist.variable} h-full antialiased`} suppressHydrationWarning>
+    <html lang="it" className={`${outfit.variable} h-full antialiased`} suppressHydrationWarning>
       <head>
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="mobile-web-app-capable" content="yes" />
