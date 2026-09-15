@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 import { Providers } from "@/components/providers";
+import { withBase } from "@/lib/paths";
 import "./globals.css";
 
 const geist = Geist({
@@ -23,10 +24,10 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+      { url: withBase("/icon-192.png"), sizes: "192x192", type: "image/png" },
+      { url: withBase("/icon-512.png"), sizes: "512x512", type: "image/png" },
     ],
-    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
+    apple: [{ url: withBase("/apple-touch-icon.png"), sizes: "180x180" }],
   },
   other: {
     "mobile-web-app-capable": "yes",
@@ -51,7 +52,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="ExpnsTracker" />
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <link rel="apple-touch-icon" href={withBase("/apple-touch-icon.png")} />
       </head>
       <body className="min-h-full bg-background font-sans text-foreground">
         <Providers>{children}</Providers>

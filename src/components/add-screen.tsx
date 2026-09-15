@@ -1,11 +1,20 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { QuickAddForm } from "@/components/quick-add-form";
 import { StorageError } from "@/components/screen-states";
 import { useStore } from "@/lib/store";
 
-export function AddScreen({ tipo, id }: { tipo?: string; id?: string }) {
+export function AddScreen() {
   const { status, errorMessage, resetStorage, data } = useStore();
+  const [tipo, setTipo] = useState<string | undefined>();
+  const [id, setId] = useState<string | undefined>();
+
+  useEffect(() => {
+    const query = new URLSearchParams(window.location.search);
+    setTipo(query.get("tipo") ?? undefined);
+    setId(query.get("id") ?? undefined);
+  }, []);
 
   if (status === "error") {
     return <StorageError message={errorMessage ?? "Errore di lettura."} onReset={resetStorage} />;
