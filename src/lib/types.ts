@@ -65,6 +65,13 @@ export type PiggyBank = {
   updatedAt: string;
 };
 
+export type UserAccount = {
+  id: string;
+  name: string;
+  username: string;
+  createdAt: string;
+};
+
 export type AppData = {
   version: 1;
   ledger: LedgerEntry[];
@@ -77,6 +84,7 @@ export type ListKind = "tutti" | "debiti" | "crediti" | "spese" | "idee";
 export type StatusFilter = "aperti" | "chiusi" | "tutti";
 
 export const STORAGE_KEY = "expnstracker.v1";
+export const SESSION_KEY = "expnstracker.session";
 export const INSTALL_DISMISS_KEY = "expnstracker.install-dismissed";
 
 export const emptyData = (): AppData => ({
