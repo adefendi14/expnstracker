@@ -125,11 +125,7 @@ function subscribe(listener: () => void) {
     listener();
   };
   window.addEventListener("storage", onStorage);
-  // Next.js 16 / React 19 does not always re-render after hydration when the
-  // server snapshot differs, unless the store notifies. Push a client read.
-  const ready = window.setTimeout(listener, 0);
   return () => {
-    window.clearTimeout(ready);
     listeners.delete(listener);
     window.removeEventListener("storage", onStorage);
   };

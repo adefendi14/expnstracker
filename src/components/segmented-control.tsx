@@ -19,6 +19,7 @@ export function SegmentedControl<T extends string>({
           <button
             key={option.value}
             type="button"
+            data-tab={option.value}
             disabled={disabled}
             onClick={() => onChange(option.value)}
             className={cn(

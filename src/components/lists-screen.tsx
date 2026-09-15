@@ -160,7 +160,7 @@ export function ListsScreen({
               : "Quando aggiungi debiti, spese o idee, le trovi qui."
           }
           action={
-            <Button render={<Link href="/aggiungi" />} className="h-11 rounded-2xl">
+            <Button nativeButton={false} render={<Link href="/aggiungi" />} className="h-11 rounded-2xl">
               Aggiungi
             </Button>
           }

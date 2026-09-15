@@ -9,7 +9,7 @@ export default function NotFound() {
       <p className="mt-2 text-sm text-muted-foreground">
         Questa schermata non esiste. Torna al riepilogo per continuare.
       </p>
-      <Button render={<Link href="/" />} className="mt-6 h-12 rounded-2xl px-6">
+      <Button nativeButton={false} render={<Link href="/" />} className="mt-6 h-12 rounded-2xl px-6">
         Vai al riepilogo
       </Button>
     </div>

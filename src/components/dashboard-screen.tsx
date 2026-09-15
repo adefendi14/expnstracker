@@ -114,7 +114,7 @@ export function DashboardScreen() {
             title="Nessun movimento ancora"
             description="Aggiungi un debito, una spesa o un obiettivo. Il saldo stimato si aggiorna da solo, tutto resta su questo iPhone."
             action={
-              <Button render={<Link href="/aggiungi" />} className="h-11 rounded-2xl">
+              <Button nativeButton={false} render={<Link href="/aggiungi" />} className="h-11 rounded-2xl">
                 Aggiungi il primo movimento
               </Button>
             }
@@ -148,7 +148,7 @@ export function DashboardScreen() {
       )}
 
       <div className="px-4 md:px-8">
-        <Button render={<Link href="/aggiungi" />} className="h-12 w-full rounded-2xl text-base">
+        <Button nativeButton={false} render={<Link href="/aggiungi" />} className="h-12 w-full rounded-2xl text-base">
           <Plus className="size-4" />
           Aggiungi
         </Button>
