@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { StoreProvider, useStore } from "@/lib/store";
 import { AppShell } from "@/components/app-shell";
 import { AuthScreen } from "@/components/auth-screen";
+import { PwaRegister } from "@/components/pwa-register";
 import { ScreenSkeleton, StorageError } from "@/components/screen-states";
 
 function Gate({ children }: { children: ReactNode }) {
@@ -35,6 +36,7 @@ function Gate({ children }: { children: ReactNode }) {
 export function Providers({ children }: { children: ReactNode }) {
   return (
     <StoreProvider>
+      <PwaRegister />
       <Gate>{children}</Gate>
       <Toaster position="top-center" theme="light" richColors={false} />
     </StoreProvider>

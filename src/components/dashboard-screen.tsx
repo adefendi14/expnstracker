@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ArrowDownLeft, ArrowUpRight, Plus, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/empty-state";
-import { InstallBanner } from "@/components/install-banner";
+import { InstallHomeButton } from "@/components/install-home-button";
 import { DashboardPiggySection } from "@/components/piggy-banks";
 import { useStore } from "@/lib/store";
 import {
@@ -59,7 +59,9 @@ export function DashboardScreen() {
         <p className="text-sm text-muted-foreground">{formatLongDate()}</p>
         <h1 className="mt-1 text-3xl font-semibold tracking-tight">Riepilogo</h1>
       </div>
-      <InstallBanner />
+      <div className="px-4 md:px-8">
+        <InstallHomeButton />
+      </div>
 
       <div className="px-4 md:px-8">
         <section className="rounded-[1.75rem] bg-card p-6 ring-1 ring-foreground/8">

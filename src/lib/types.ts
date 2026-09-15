@@ -86,7 +86,6 @@ export type StatusFilter = "aperti" | "chiusi" | "tutti";
 
 export const STORAGE_KEY = "expnstracker.v1";
 export const SESSION_KEY = "expnstracker.session";
-export const INSTALL_DISMISS_KEY = "expnstracker.install-dismissed";
 
 export const emptyData = (): AppData => ({
   version: 1,
