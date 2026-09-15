@@ -95,6 +95,10 @@ export function InstallHomeButton() {
   const label = ios ? "Aggiungi a Home" : "Installa l’app";
 
   async function onClick() {
+    if (ios) {
+      setHelpOpen(true);
+      return;
+    }
     if (nativePrompt) {
       setBusy(true);
       const result = await triggerInstallPrompt();
