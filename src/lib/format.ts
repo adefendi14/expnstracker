@@ -56,6 +56,8 @@ export function parseEuroInput(raw: string): number | null {
     text = text.replace(/\./g, "").replace(",", ".");
   } else if (text.includes(",")) {
     text = text.replace(",", ".");
+  } else if (/^\d{1,3}(\.\d{3})+$/.test(text)) {
+    text = text.replace(/\./g, "");
   }
   const value = Number(text);
   if (!Number.isFinite(value) || value < 0) return null;

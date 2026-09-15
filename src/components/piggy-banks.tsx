@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { MoreHorizontal, PiggyBank } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -39,15 +39,12 @@ export function PiggyBankCard({ piggy }: { piggy: PiggyBankType }) {
   const [fundsOpen, setFundsOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [mode, setMode] = useState<"add" | "remove">("add");
-  const [amount, setAmount] = useState("");
-  const [name, setName] = useState(piggy.name);
-  const [target, setTarget] = useState(String(piggy.target).replace(".", ","));
-  const [notes, setNotes] = useState(piggy.notes ?? "");
   const [error, setError] = useState("");
   const value = percent(piggy.current, piggy.target);
 
-  function submitFunds() {
-    const parsed = parseEuroInput(amount);
+  function submitFunds(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const parsed = parseEuroInput(String(new FormData(event.currentTarget).get("amount") ?? ""));
     if (parsed === null || parsed === 0) {
       setError("Inserisci un importo valido.");
       return;
@@ -59,25 +56,29 @@ export function PiggyBankCard({ piggy }: { piggy: PiggyBankType }) {
     }
     store.adjustPiggy(piggy.id, delta);
     toast.success(mode === "add" ? "Fondi aggiunti" : "Fondi prelevati");
-    setAmount("");
     setError("");
     setFundsOpen(false);
   }
 
-  function submitEdit() {
-    if (!name.trim()) {
+  function submitEdit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    const nextName = String(data.get("name") ?? "");
+    const nextTarget = String(data.get("target") ?? "");
+    const nextNotes = String(data.get("notes") ?? "");
+    if (!nextName.trim()) {
       setError("Dai un nome all’obiettivo.");
       return;
     }
-    const parsed = parseEuroInput(target);
+    const parsed = parseEuroInput(nextTarget);
     if (parsed === null || parsed === 0) {
       setError("Inserisci un obiettivo in euro.");
       return;
     }
     store.updatePiggy(piggy.id, {
-      name: name.trim(),
+      name: nextName.trim(),
       target: parsed,
-      notes: notes.trim() || undefined,
+      notes: nextNotes.trim() || undefined,
     });
     toast.success("Obiettivo aggiornato");
     setError("");
@@ -128,76 +129,83 @@ export function PiggyBankCard({ piggy }: { piggy: PiggyBankType }) {
 
       <Dialog open={fundsOpen} onOpenChange={setFundsOpen}>
         <DialogContent className="rounded-3xl sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Aggiungi fondi</DialogTitle>
-            <DialogDescription>
-              Aggiungi o preleva dal salvadanaio «{piggy.name}».
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid grid-cols-2 gap-2">
-            <Button
-              type="button"
-              variant={mode === "add" ? "default" : "outline"}
-              className="h-11 rounded-2xl"
-              onClick={() => setMode("add")}
-            >
-              Aggiungi
-            </Button>
-            <Button
-              type="button"
-              variant={mode === "remove" ? "default" : "outline"}
-              className="h-11 rounded-2xl"
-              onClick={() => setMode("remove")}
-            >
-              Preleva
-            </Button>
-          </div>
-          <Field label="Importo" error={error}>
-            <Input
-              inputMode="decimal"
-              value={amount}
-              onChange={(event) => setAmount(event.target.value)}
-              placeholder="0,00"
-              className={inputClass}
-            />
-          </Field>
-          <DialogFooter>
-            <Button className="h-11 rounded-2xl" onClick={submitFunds}>
-              Conferma
-            </Button>
-          </DialogFooter>
+          <form onSubmit={submitFunds} className="flex flex-col gap-4">
+            <DialogHeader>
+              <DialogTitle>Aggiungi fondi</DialogTitle>
+              <DialogDescription>
+                Aggiungi o preleva dal salvadanaio «{piggy.name}».
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                type="button"
+                variant={mode === "add" ? "default" : "outline"}
+                className="h-11 rounded-2xl"
+                onClick={() => setMode("add")}
+              >
+                Aggiungi
+              </Button>
+              <Button
+                type="button"
+                variant={mode === "remove" ? "default" : "outline"}
+                className="h-11 rounded-2xl"
+                onClick={() => setMode("remove")}
+              >
+                Preleva
+              </Button>
+            </div>
+            <Field label="Importo" error={error}>
+              <Input
+                name="amount"
+                inputMode="decimal"
+                autoComplete="off"
+                placeholder="0,00"
+                className={inputClass}
+              />
+            </Field>
+            <DialogFooter>
+              <button
+                type="submit"
+                className="inline-flex h-11 items-center justify-center rounded-2xl bg-primary px-4 text-sm font-medium text-primary-foreground"
+              >
+                Conferma
+              </button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
 
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent className="rounded-3xl sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Modifica obiettivo</DialogTitle>
-            <DialogDescription>Aggiorna nome, target e note.</DialogDescription>
-          </DialogHeader>
-          <Field label="Nome">
-            <Input value={name} onChange={(event) => setName(event.target.value)} className={inputClass} />
-          </Field>
-          <Field label="Obiettivo in euro" error={error}>
-            <Input
-              inputMode="decimal"
-              value={target}
-              onChange={(event) => setTarget(event.target.value)}
-              className={inputClass}
-            />
-          </Field>
-          <Field label="Note">
-            <Textarea
-              value={notes}
-              onChange={(event) => setNotes(event.target.value)}
-              className="min-h-20 rounded-2xl"
-            />
-          </Field>
-          <DialogFooter>
-            <Button className="h-11 rounded-2xl" onClick={submitEdit}>
-              Salva
-            </Button>
-          </DialogFooter>
+          <form onSubmit={submitEdit} className="flex flex-col gap-4">
+            <DialogHeader>
+              <DialogTitle>Modifica obiettivo</DialogTitle>
+              <DialogDescription>Aggiorna nome, target e note.</DialogDescription>
+            </DialogHeader>
+            <Field label="Nome">
+              <Input name="name" defaultValue={piggy.name} className={inputClass} autoComplete="off" />
+            </Field>
+            <Field label="Obiettivo in euro" error={error}>
+              <Input
+                name="target"
+                inputMode="decimal"
+                autoComplete="off"
+                defaultValue={String(piggy.target).replace(".", ",")}
+                className={inputClass}
+              />
+            </Field>
+            <Field label="Note">
+              <Textarea name="notes" defaultValue={piggy.notes ?? ""} className="min-h-20 rounded-2xl" />
+            </Field>
+            <DialogFooter>
+              <button
+                type="submit"
+                className="inline-flex h-11 items-center justify-center rounded-2xl bg-primary px-4 text-sm font-medium text-primary-foreground"
+              >
+                Salva
+              </button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </article>
@@ -207,13 +215,15 @@ export function PiggyBankCard({ piggy }: { piggy: PiggyBankType }) {
 export function CreatePiggyButton() {
   const store = useStore();
   const [open, setOpen] = useState(false);
-  const [name, setName] = useState("");
-  const [target, setTarget] = useState("");
-  const [current, setCurrent] = useState("");
-  const [notes, setNotes] = useState("");
   const [error, setError] = useState("");
 
-  function submit() {
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    const name = String(data.get("name") ?? "");
+    const target = String(data.get("target") ?? "");
+    const current = String(data.get("current") ?? "");
+    const notes = String(data.get("notes") ?? "");
     if (!name.trim()) {
       setError("Dai un nome all’obiettivo.");
       return;
@@ -235,10 +245,6 @@ export function CreatePiggyButton() {
       notes: notes.trim() || undefined,
     });
     toast.success("Salvadanaio creato");
-    setName("");
-    setTarget("");
-    setCurrent("");
-    setNotes("");
     setError("");
     setOpen(false);
   }
@@ -248,50 +254,57 @@ export function CreatePiggyButton() {
       <Button className="h-12 rounded-2xl" onClick={() => setOpen(true)}>
         Nuovo obiettivo
       </Button>
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog
+        open={open}
+        onOpenChange={(next) => {
+          setOpen(next);
+          if (!next) setError("");
+        }}
+      >
         <DialogContent className="rounded-3xl sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Nuovo salvadanaio</DialogTitle>
-            <DialogDescription>Crea un obiettivo con un target in euro.</DialogDescription>
-          </DialogHeader>
-          <Field label="Nome">
-            <Input
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              placeholder="Viaggio, fondo emergenza…"
-              className={inputClass}
-            />
-          </Field>
-          <Field label="Obiettivo in euro" error={error}>
-            <Input
-              inputMode="decimal"
-              value={target}
-              onChange={(event) => setTarget(event.target.value)}
-              placeholder="1000"
-              className={inputClass}
-            />
-          </Field>
-          <Field label="Già messo da parte" hint="Facoltativo">
-            <Input
-              inputMode="decimal"
-              value={current}
-              onChange={(event) => setCurrent(event.target.value)}
-              placeholder="0,00"
-              className={inputClass}
-            />
-          </Field>
-          <Field label="Note" hint="Facoltative">
-            <Textarea
-              value={notes}
-              onChange={(event) => setNotes(event.target.value)}
-              className="min-h-20 rounded-2xl"
-            />
-          </Field>
-          <DialogFooter>
-            <Button className="h-11 rounded-2xl" onClick={submit}>
-              Crea
-            </Button>
-          </DialogFooter>
+          <form onSubmit={submit} className="flex flex-col gap-4">
+            <DialogHeader>
+              <DialogTitle>Nuovo salvadanaio</DialogTitle>
+              <DialogDescription>Crea un obiettivo con un target in euro.</DialogDescription>
+            </DialogHeader>
+            <Field label="Nome">
+              <Input
+                name="name"
+                placeholder="Viaggio, fondo emergenza…"
+                className={inputClass}
+                autoComplete="off"
+              />
+            </Field>
+            <Field label="Obiettivo in euro" error={error}>
+              <Input
+                name="target"
+                inputMode="decimal"
+                autoComplete="off"
+                placeholder="1000"
+                className={inputClass}
+              />
+            </Field>
+            <Field label="Già messo da parte" hint="Facoltativo">
+              <Input
+                name="current"
+                inputMode="decimal"
+                autoComplete="off"
+                placeholder="0,00"
+                className={inputClass}
+              />
+            </Field>
+            <Field label="Note" hint="Facoltative">
+              <Textarea name="notes" className="min-h-20 rounded-2xl" />
+            </Field>
+            <DialogFooter>
+              <button
+                type="submit"
+                className="inline-flex h-11 items-center justify-center rounded-2xl bg-primary px-4 text-sm font-medium text-primary-foreground"
+              >
+                Crea
+              </button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </>
