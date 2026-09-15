@@ -101,3 +101,17 @@ export const CATEGORY_ACCENT: Record<ExpenseCategory, string> = {
   salute: "bg-rose-50 text-rose-800",
   altro: "bg-stone-100 text-stone-700",
 };
+
+export function ledgerPaid(item: { paid?: number }) {
+  return item.paid ?? 0;
+}
+
+export function ledgerRemaining(item: { amount: number; paid?: number; settled?: boolean }) {
+  if (item.settled) return 0;
+  return Math.max(0, Math.round((item.amount - ledgerPaid(item)) * 100) / 100);
+}
+
+export function ledgerPercent(item: { amount: number; paid?: number }) {
+  if (item.amount <= 0) return ledgerPaid(item) > 0 ? 100 : 0;
+  return Math.min(100, Math.round((ledgerPaid(item) / item.amount) * 100));
+}

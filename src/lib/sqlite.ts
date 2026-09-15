@@ -68,6 +68,7 @@ function applySchema(db: Database) {
       direction TEXT NOT NULL,
       person TEXT NOT NULL,
       amount REAL NOT NULL,
+      paid REAL NOT NULL DEFAULT 0,
       due_date TEXT,
       notes TEXT,
       settled INTEGER NOT NULL DEFAULT 0,
@@ -115,6 +116,11 @@ function applySchema(db: Database) {
   `);
   db.run("PRAGMA foreign_keys = ON;");
   db.run("INSERT OR IGNORE INTO meta (key, value) VALUES ('schema_version', '1');");
+  const ledgerInfo = db.exec("PRAGMA table_info(ledger)");
+  const ledgerColumns = new Set((ledgerInfo[0]?.values ?? []).map((row) => String(row[1])));
+  if (!ledgerColumns.has("paid")) {
+    db.run("ALTER TABLE ledger ADD COLUMN paid REAL NOT NULL DEFAULT 0");
+  }
 }
 
 export function getDb() {

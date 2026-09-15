@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/sheet";
 import { EmptyState } from "@/components/empty-state";
 import { Field } from "@/components/field";
+import { Progress } from "@/components/ui/progress";
 import { SegmentedControl } from "@/components/segmented-control";
 import { useStore } from "@/lib/store";
 import {
@@ -26,7 +27,11 @@ import {
   PRIORITY_LABELS,
   RISK_LABELS,
   formatEuro,
+  formatEuroCompact,
   formatShortDate,
+  ledgerPaid,
+  ledgerPercent,
+  ledgerRemaining,
   parseEuroInput,
 } from "@/lib/format";
 import type {
@@ -58,6 +63,7 @@ export function ListsScreen({
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Row | null>(null);
   const [addError, setAddError] = useState("");
+  const [ledgerAction, setLedgerAction] = useState<"versa" | "obiettivo">("versa");
 
   const rows = useMemo(() => {
     const all: Row[] = [
@@ -176,6 +182,7 @@ export function ListsScreen({
                 type="button"
                 onClick={() => {
                   setAddError("");
+                  setLedgerAction("versa");
                   setSelected(row);
                 }}
                 className="flex w-full items-center gap-3 rounded-2xl bg-card px-4 py-3.5 text-left ring-1 ring-foreground/8"
@@ -193,6 +200,7 @@ export function ListsScreen({
           if (!open) {
             setSelected(null);
             setAddError("");
+            setLedgerAction("versa");
           }
         }}
       >
@@ -221,7 +229,7 @@ export function ListsScreen({
                 <p className="text-2xl font-semibold tracking-tight">
                   {formatEuro(
                     selected.kind === "ledger"
-                      ? selected.item.amount
+                      ? ledgerRemaining(selected.item)
                       : selected.kind === "expense"
                         ? selected.item.amount
                         : selected.item.amount
@@ -229,11 +237,20 @@ export function ListsScreen({
                 </p>
                 {selected.kind === "ledger" ? (
                   <>
+                    <p className="text-sm text-muted-foreground">
+                      {formatEuroCompact(ledgerPaid(selected.item))} /{" "}
+                      {formatEuroCompact(selected.item.amount)} — {ledgerPercent(selected.item)}%
+                    </p>
+                    <Progress value={ledgerPercent(selected.item)} className="mt-1" />
                     {selected.item.dueDate ? (
                       <p className="text-muted-foreground">Scadenza {formatShortDate(selected.item.dueDate)}</p>
                     ) : null}
                     <p className={selected.item.settled ? "text-emerald-700" : "text-muted-foreground"}>
-                      {selected.item.settled ? "Saldato" : "Aperto"}
+                      {selected.item.settled
+                        ? "Saldato"
+                        : selected.item.direction === "debito"
+                          ? "Aperto · resta da dare"
+                          : "Aperto · resta da ricevere"}
                     </p>
                   </>
                 ) : null}
@@ -272,36 +289,94 @@ export function ListsScreen({
                         String(new FormData(event.currentTarget).get("add-amount") ?? "")
                       );
                       if (parsed === null || parsed === 0) {
-                        setAddError("Inserisci l’importo da aggiungere.");
+                        setAddError("Inserisci un importo valido.");
                         return;
                       }
-                      store.adjustLedger(selected.item.id, parsed);
-                      const nextAmount = Math.round((selected.item.amount + parsed) * 100) / 100;
-                      setSelected({
-                        kind: "ledger",
-                        item: {
-                          ...selected.item,
-                          amount: nextAmount,
-                          settled: false,
-                        },
-                      });
+                      if (ledgerAction === "versa") {
+                        const remaining = ledgerRemaining(selected.item);
+                        if (parsed > remaining && remaining > 0) {
+                          setAddError(
+                            `Puoi versare al massimo ${formatEuro(remaining)}.`
+                          );
+                          return;
+                        }
+                        if (remaining === 0 && !selected.item.settled) {
+                          setAddError("Alza prima l’obiettivo, poi versa.");
+                          return;
+                        }
+                        store.adjustLedgerPaid(selected.item.id, parsed);
+                        const paid = Math.min(
+                          selected.item.amount,
+                          Math.round((ledgerPaid(selected.item) + parsed) * 100) / 100
+                        );
+                        setSelected({
+                          kind: "ledger",
+                          item: {
+                            ...selected.item,
+                            paid,
+                            settled: paid >= selected.item.amount,
+                          },
+                        });
+                        toast.success(
+                          selected.item.direction === "debito"
+                            ? "Versamento sul debito"
+                            : "Versamento sul credito"
+                        );
+                      } else {
+                        store.adjustLedgerTarget(selected.item.id, parsed);
+                        const amount = Math.round((selected.item.amount + parsed) * 100) / 100;
+                        setSelected({
+                          kind: "ledger",
+                          item: {
+                            ...selected.item,
+                            amount,
+                            settled: ledgerPaid(selected.item) >= amount,
+                          },
+                        });
+                        toast.success("Obiettivo aumentato");
+                      }
                       event.currentTarget.reset();
                       setAddError("");
-                      toast.success(
-                        `${formatEuro(parsed)} aggiunti al ${
-                          selected.item.direction === "debito" ? "debito" : "credito"
-                        }`
-                      );
                     }}
                   >
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        className={`h-10 rounded-xl text-sm font-medium ${
+                          ledgerAction === "versa"
+                            ? "bg-foreground text-background"
+                            : "bg-background text-muted-foreground"
+                        }`}
+                        onClick={() => {
+                          setLedgerAction("versa");
+                          setAddError("");
+                        }}
+                      >
+                        Versa
+                      </button>
+                      <button
+                        type="button"
+                        className={`h-10 rounded-xl text-sm font-medium ${
+                          ledgerAction === "obiettivo"
+                            ? "bg-foreground text-background"
+                            : "bg-background text-muted-foreground"
+                        }`}
+                        onClick={() => {
+                          setLedgerAction("obiettivo");
+                          setAddError("");
+                        }}
+                      >
+                        Aumenta obiettivo
+                      </button>
+                    </div>
                     <Field
-                      label={
-                        selected.item.direction === "debito"
-                          ? "Aggiungi al debito"
-                          : "Aggiungi al credito"
-                      }
+                      label={ledgerAction === "versa" ? "Importo da versare" : "Quanto alzare l’obiettivo"}
                       htmlFor="add-amount"
-                      hint="Il totale si aggiorna subito. Non serve riscrivere l’importo intero."
+                      hint={
+                        ledgerAction === "versa"
+                          ? "Come un salvadanaio: butti dentro i soldi e il debito/credito scende."
+                          : "Se cresce nel tempo, alza l’obiettivo senza toccare i versamenti."
+                      }
                       error={addError || undefined}
                     >
                       <Input
@@ -317,9 +392,11 @@ export function ListsScreen({
                       type="submit"
                       className="inline-flex h-11 w-full items-center justify-center rounded-2xl bg-foreground px-4 text-sm font-medium text-background"
                     >
-                      {selected.item.direction === "debito"
-                        ? "Aggiungi al debito"
-                        : "Aggiungi al credito"}
+                      {ledgerAction === "versa"
+                        ? selected.item.direction === "debito"
+                          ? "Versa sul debito"
+                          : "Versa sul credito"
+                        : "Aumenta obiettivo"}
                     </button>
                   </form>
                 ) : null}
@@ -391,13 +468,14 @@ function RowPreview({ row }: { row: Row }) {
           <p className="truncate font-medium">{row.item.person}</p>
           <p className="mt-0.5 text-xs text-muted-foreground">
             {row.item.direction === "debito" ? "Debito" : "Credito"}
+            {` · ${formatEuroCompact(ledgerPaid(row.item))} / ${formatEuroCompact(row.item.amount)}`}
             {row.item.dueDate ? ` · ${formatShortDate(row.item.dueDate)}` : ""}
             {row.item.settled ? " · saldato" : ""}
           </p>
         </div>
         <p className={`text-sm font-medium ${row.item.direction === "debito" ? "text-rose-700" : "text-emerald-700"}`}>
           {row.item.direction === "debito" ? "−" : "+"}
-          {formatEuro(row.item.amount)}
+          {formatEuro(ledgerRemaining(row.item))}
         </p>
       </>
     );

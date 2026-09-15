@@ -24,6 +24,7 @@ export type LedgerEntry = {
   direction: DebtDirection;
   person: string;
   amount: number;
+  paid: number;
   dueDate?: string;
   notes?: string;
   settled: boolean;
