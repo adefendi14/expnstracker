@@ -1,8 +1,10 @@
 # ExpnsTracker
 
-Personal PWA for debts, credits, expenses, savings goals, and investment ideas. The interface is Italian, amounts are in euro, and everything is stored in LocalStorage on the device. No account, no backend.
+Personal PWA for debts, credits, expenses, savings goals, and investment ideas. The interface is Italian, amounts are in euro.
 
-Stack: Next.js App Router, TypeScript, Tailwind CSS, shadcn/ui.
+Accounts are local (register / login). All data lives in a SQLite file on the device (`expnstracker.sqlite`), kept in the browser and exportable. No cloud, no backend.
+
+Stack: Next.js App Router, TypeScript, Tailwind CSS, shadcn/ui, sql.js.
 
 ## Run locally
 
@@ -13,7 +15,7 @@ npm install
 npm run dev
 ```
 
-The app listens on [http://127.0.0.1:4317](http://127.0.0.1:4317).
+The app listens on [http://127.0.0.1:4317](http://127.0.0.1:4317). Create an account on first open. Each account only sees its own movements.
 
 Production (static export, same as GitHub Pages):
 
@@ -22,7 +24,9 @@ npm run build
 npm start
 ```
 
-Open the same URL. Data never leaves the browser: clearing site data deletes movements, ideas, and piggy banks.
+Open the same URL. Clearing site data deletes the SQLite file. Use **Esporta file** to keep a copy of `expnstracker.sqlite`.
+
+If you still have the old LocalStorage dump, the first account created on that browser imports it automatically.
 
 ## Pubblica su GitHub Pages
 
@@ -35,7 +39,7 @@ Stesso schema di [arteco-srl](https://github.com/adefendi14/arteco-srl): push su
 
 Il `basePath` viene calcolato da solo dal nome del repository (`GITHUB_REPOSITORY`), come `/arteco-srl/` in Vite. Per forzarlo imposta `PAGES_BASE_PATH` nel job di build.
 
-I dati restano nel LocalStorage del browser. GitHub Pages non vede debiti, spese o salvadanai.
+Account e database restano nel browser di chi apre il sito. GitHub Pages non vede password, debiti o salvadanai.
 
 Per provare in locale la stessa build di Pages:
 
@@ -60,6 +64,8 @@ On a Mac or Windows desktop, Chrome or Edge can also install it from the address
 
 ## What you can do
 
+- **Account**: create users, log in, log out. Passwords are hashed with PBKDF2 on the device.
+- **File SQLite**: export / import `expnstracker.sqlite` to move the whole database (all accounts) between browsers.
 - **Riepilogo**: estimated balance (piggy banks + open credits − open debts), open debt/credit totals, combined savings progress.
 - **Aggiungi**: one form with tabs for Debito/Credito, Spesa, and Idea di investimento.
 - **Salvadanai**: create euro targets, add or withdraw funds, see `450€ / 1000€ — 45%`.
@@ -68,7 +74,9 @@ On a Mac or Windows desktop, Chrome or Edge can also install it from the address
 ## Project layout
 
 - `src/app` — routes, PWA manifest, metadata, error/loading states
-- `src/components` — shell, dashboard, forms, lists
-- `src/lib/store.tsx` — LocalStorage persistence
+- `src/components` — shell, dashboard, forms, lists, login
+- `src/lib/sqlite.ts` — SQLite file (sql.js) persisted in IndexedDB
+- `src/lib/store.tsx` — accounts and per-user queries
 - `.github/workflows/deploy.yml` — static export to the `gh-pages` branch (same pattern as arteco-srl)
+- `public/sql-wasm.wasm` — SQLite engine
 - `public/icon-192.png`, `public/icon-512.png`, `public/apple-touch-icon.png` — home screen icons

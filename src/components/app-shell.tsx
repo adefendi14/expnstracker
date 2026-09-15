@@ -5,6 +5,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, List, PiggyBank, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AccountMenu } from "@/components/account-menu";
+import { useStore } from "@/lib/store";
 
 const NAV = [
   { href: "/", label: "Riepilogo", icon: Home },
@@ -20,6 +22,7 @@ function isActive(pathname: string, href: string) {
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const { user } = useStore();
 
   return (
     <div className="min-h-dvh bg-background">
@@ -51,14 +54,28 @@ export function AppShell({ children }: { children: ReactNode }) {
             );
           })}
         </nav>
-        <p className="mt-auto px-3 text-xs leading-5 text-muted-foreground">
-          Tutto resta su questo dispositivo. Nessun account, nessuna nuvola.
+        <p className="mt-auto px-3 pb-4 text-xs leading-5 text-muted-foreground">
+          File SQLite su questo dispositivo. Ogni account vede solo i propri movimenti.
         </p>
+        <div className="rounded-2xl bg-muted/70 p-3">
+          <AccountMenu />
+        </div>
       </aside>
 
       <div className="flex min-h-dvh flex-col md:pl-60">
         <header className="sticky top-0 z-20 border-b border-foreground/6 bg-background/80 px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 backdrop-blur-xl md:hidden">
-          <p className="text-center text-[13px] font-semibold tracking-tight">ExpnsTracker</p>
+          <div className="grid grid-cols-[2.5rem_1fr_2.5rem] items-center">
+            <span />
+            <p className="text-center text-[13px] font-semibold tracking-tight">ExpnsTracker</p>
+            <details className="relative justify-self-end">
+              <summary className="flex size-10 cursor-pointer list-none items-center justify-center rounded-full bg-muted text-xs font-semibold [&::-webkit-details-marker]:hidden">
+                {(user?.name ?? "U").slice(0, 1).toUpperCase()}
+              </summary>
+              <div className="absolute top-11 right-0 z-40 w-56 rounded-2xl bg-card p-3 shadow-lg ring-1 ring-foreground/8">
+                <AccountMenu />
+              </div>
+            </details>
+          </div>
         </header>
         <main className="flex-1 pb-[calc(5.75rem+env(safe-area-inset-bottom))] md:pb-8">
           {children}

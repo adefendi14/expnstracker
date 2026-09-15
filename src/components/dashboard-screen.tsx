@@ -112,7 +112,7 @@ export function DashboardScreen() {
           <EmptyState
             icon={<Wallet className="size-5" />}
             title="Nessun movimento ancora"
-            description="Aggiungi un debito, una spesa o un obiettivo. Il saldo stimato si aggiorna da solo, tutto resta su questo iPhone."
+            description="Aggiungi un debito, una spesa o un obiettivo. Il saldo si aggiorna da solo, i dati restano nel tuo account sul file SQLite."
             action={
               <Button nativeButton={false} render={<Link href="/aggiungi" />} className="h-11 rounded-2xl">
                 Aggiungi il primo movimento
