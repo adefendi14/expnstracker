@@ -129,7 +129,7 @@ export async function openSqlite() {
   const sqlModule = await import("sql.js");
   const initSqlJs = sqlModule.default;
   sqlRuntime = await initSqlJs({
-    locateFile: (file) => withBase(`/${file}`),
+    locateFile: (file) => (file.endsWith(".wasm") ? withBase("/sql-wasm.wasm") : withBase(`/${file}`)),
   });
   const stored = await readStoredFile();
   database = stored ? new sqlRuntime.Database(stored) : new sqlRuntime.Database();
