@@ -385,9 +385,13 @@ export function QuickAddForm({
       ) : null}
 
       <div className="flex flex-col gap-2 pt-2 sm:flex-row">
-        <Button type="button" className="h-12 flex-1 rounded-2xl text-base" onClick={handleSave}>
+        <button
+          type="button"
+          className="inline-flex h-12 flex-1 items-center justify-center rounded-2xl bg-primary px-4 text-base font-medium text-primary-foreground"
+          onClick={handleSave}
+        >
           {editing ? "Salva modifiche" : "Salva"}
-        </Button>
+        </button>
         <Button
           type="button"
           variant="outline"
