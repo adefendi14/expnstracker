@@ -578,7 +578,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       openCredits,
       piggyCurrent,
       piggyTarget,
-      estimatedBalance: piggyCurrent + openCredits - openDebts,
+      estimatedBalance: openCredits - openDebts,
       monthExpenses,
       piggyPercent,
     };

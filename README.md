@@ -66,7 +66,7 @@ On a Mac or Windows desktop, Chrome or Edge can also install it from the address
 
 - **Account**: create users, log in, log out. Passwords are hashed with PBKDF2 on the device.
 - **File SQLite**: export / import `expnstracker.sqlite` to move the whole database (all accounts) between browsers.
-- **Riepilogo**: estimated balance (piggy banks + open credits − open debts), open debt/credit totals, combined savings progress.
+- **Riepilogo**: estimated balance (open credits − open debts only). Piggy banks are separate goal trackers.
 - **Aggiungi**: one form with tabs for Debito/Credito, Spesa, and Idea di investimento.
 - **Salvadanai**: create euro targets, add or withdraw funds, see `450€ / 1000€ — 45%`.
 - **Elenco**: browse, search, filter, edit, settle debts, complete ideas, delete items.
