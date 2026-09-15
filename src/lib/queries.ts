@@ -27,6 +27,7 @@ type LedgerRow = {
   direction: DebtDirection;
   person: string;
   amount: number;
+  paid: number | null;
   due_date: string | null;
   notes: string | null;
   settled: number;
@@ -119,6 +120,7 @@ export function loadUserData(userId: string): AppData {
       direction: row.direction,
       person: row.person,
       amount: Number(row.amount),
+      paid: Number(row.paid ?? 0),
       dueDate: row.due_date ?? undefined,
       notes: row.notes ?? undefined,
       settled: Boolean(row.settled),
@@ -192,14 +194,15 @@ export function insertLegacyData(userId: string, data: AppData) {
 
 export function insertLedger(userId: string, item: LedgerEntry) {
   runSql(
-    `INSERT INTO ledger (id, user_id, direction, person, amount, due_date, notes, settled, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO ledger (id, user_id, direction, person, amount, paid, due_date, notes, settled, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       item.id,
       userId,
       item.direction,
       item.person,
       item.amount,
+      item.paid ?? 0,
       item.dueDate ?? null,
       item.notes ?? null,
       item.settled ? 1 : 0,
@@ -211,12 +214,13 @@ export function insertLedger(userId: string, item: LedgerEntry) {
 
 export function updateLedgerRow(userId: string, id: string, item: LedgerEntry) {
   runSql(
-    `UPDATE ledger SET direction = ?, person = ?, amount = ?, due_date = ?, notes = ?, settled = ?, updated_at = ?
+    `UPDATE ledger SET direction = ?, person = ?, amount = ?, paid = ?, due_date = ?, notes = ?, settled = ?, updated_at = ?
      WHERE id = ? AND user_id = ?`,
     [
       item.direction,
       item.person,
       item.amount,
+      item.paid ?? 0,
       item.dueDate ?? null,
       item.notes ?? null,
       item.settled ? 1 : 0,

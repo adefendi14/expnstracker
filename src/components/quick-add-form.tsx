@@ -225,7 +225,12 @@ export function QuickAddForm({
             />
           </Field>
           <FieldRow>
-            <Field label="Importo" htmlFor="ledger-amount" error={errors.ledgerAmount}>
+            <Field
+              label="Obiettivo"
+              htmlFor="ledger-amount"
+              error={errors.ledgerAmount}
+              hint="Poi versi dall’elenco, come un salvadanaio. Se cresce, alzi l’obiettivo."
+            >
               <Input
                 id="ledger-amount"
                 inputMode="decimal"

@@ -19,7 +19,7 @@ import {
   type PiggyBank,
   type UserAccount,
 } from "@/lib/types";
-import { isThisMonth } from "@/lib/format";
+import { isThisMonth, ledgerPaid, ledgerRemaining } from "@/lib/format";
 import { hashPassword, verifyPassword } from "@/lib/password";
 import {
   countUsers,
@@ -74,10 +74,13 @@ type StoreContextValue = {
   exportDatabase: () => void;
   importDatabase: (file: File) => Promise<void>;
   resetStorage: () => Promise<void>;
-  addLedger: (entry: Omit<LedgerEntry, "id" | "createdAt" | "updatedAt">) => LedgerEntry;
+  addLedger: (
+    entry: Omit<LedgerEntry, "id" | "createdAt" | "updatedAt" | "paid"> & { paid?: number }
+  ) => LedgerEntry;
   updateLedger: (id: string, patch: Partial<LedgerEntry>) => void;
   deleteLedger: (id: string) => void;
-  adjustLedger: (id: string, delta: number) => void;
+  adjustLedgerPaid: (id: string, delta: number) => void;
+  adjustLedgerTarget: (id: string, delta: number) => void;
   addExpense: (entry: Omit<Expense, "id" | "createdAt" | "updatedAt">) => Expense;
   updateExpense: (id: string, patch: Partial<Expense>) => void;
   deleteExpense: (id: string) => void;
@@ -370,7 +373,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const addLedger: StoreContextValue["addLedger"] = useCallback(
     (entry) => {
       const stamp = nowIso();
-      const created: LedgerEntry = { ...entry, id: createId(), createdAt: stamp, updatedAt: stamp };
+      const created: LedgerEntry = {
+        ...entry,
+        paid: entry.paid ?? 0,
+        id: createId(),
+        createdAt: stamp,
+        updatedAt: stamp,
+      };
       commitUser((userId) => insertLedger(userId, created));
       return created;
     },
@@ -382,7 +391,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       commitUser((userId, data) => {
         const currentItem = data.ledger.find((item) => item.id === id);
         if (!currentItem) return;
-        updateLedgerRow(userId, id, { ...currentItem, ...patch, updatedAt: nowIso() });
+        const next: LedgerEntry = {
+          ...currentItem,
+          ...patch,
+          paid: patch.paid ?? currentItem.paid ?? 0,
+          updatedAt: nowIso(),
+        };
+        if (patch.settled === true && patch.paid === undefined) {
+          next.paid = next.amount;
+        }
+        updateLedgerRow(userId, id, next);
       });
     },
     [commitUser]
@@ -395,16 +413,41 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [commitUser]
   );
 
-  const adjustLedger: StoreContextValue["adjustLedger"] = useCallback(
+  const adjustLedgerPaid: StoreContextValue["adjustLedgerPaid"] = useCallback(
     (id, delta) => {
       commitUser((userId, data) => {
         const currentItem = data.ledger.find((item) => item.id === id);
         if (!currentItem) return;
-        const next = Math.max(0, Math.round((currentItem.amount + delta) * 100) / 100);
+        const paid = Math.max(
+          0,
+          Math.min(currentItem.amount, Math.round((ledgerPaid(currentItem) + delta) * 100) / 100)
+        );
         updateLedgerRow(userId, id, {
           ...currentItem,
-          amount: next,
-          settled: delta > 0 ? false : currentItem.settled,
+          paid,
+          settled: paid >= currentItem.amount,
+          updatedAt: nowIso(),
+        });
+      });
+    },
+    [commitUser]
+  );
+
+  const adjustLedgerTarget: StoreContextValue["adjustLedgerTarget"] = useCallback(
+    (id, delta) => {
+      commitUser((userId, data) => {
+        const currentItem = data.ledger.find((item) => item.id === id);
+        if (!currentItem) return;
+        const amount = Math.max(
+          ledgerPaid(currentItem),
+          Math.round((currentItem.amount + delta) * 100) / 100
+        );
+        const paid = ledgerPaid(currentItem);
+        updateLedgerRow(userId, id, {
+          ...currentItem,
+          amount,
+          paid,
+          settled: paid >= amount,
           updatedAt: nowIso(),
         });
       });
@@ -519,10 +562,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const totals = useMemo(() => {
     const openDebts = current.data.ledger
       .filter((item) => item.direction === "debito" && !item.settled)
-      .reduce((sum, item) => sum + item.amount, 0);
+      .reduce((sum, item) => sum + ledgerRemaining(item), 0);
     const openCredits = current.data.ledger
       .filter((item) => item.direction === "credito" && !item.settled)
-      .reduce((sum, item) => sum + item.amount, 0);
+      .reduce((sum, item) => sum + ledgerRemaining(item), 0);
     const piggyCurrent = current.data.piggyBanks.reduce((sum, item) => sum + item.current, 0);
     const piggyTarget = current.data.piggyBanks.reduce((sum, item) => sum + item.target, 0);
     const monthExpenses = current.data.expenses
@@ -557,7 +600,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     addLedger,
     updateLedger,
     deleteLedger,
-    adjustLedger,
+    adjustLedgerPaid,
+    adjustLedgerTarget,
     addExpense,
     updateExpense,
     deleteExpense,

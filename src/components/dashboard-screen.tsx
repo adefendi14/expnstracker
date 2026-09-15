@@ -13,6 +13,7 @@ import {
   formatEuroCompact,
   formatLongDate,
   formatShortDate,
+  ledgerRemaining,
 } from "@/lib/format";
 
 export function DashboardScreen() {
@@ -26,7 +27,7 @@ export function DashboardScreen() {
       href: `/elenco?tipo=${item.direction === "debito" ? "debiti" : "crediti"}`,
       title: item.person,
       meta: item.direction === "debito" ? "Debito" : "Credito",
-      amount: `${item.direction === "debito" ? "−" : "+"}${formatEuro(item.amount)}`,
+      amount: `${item.direction === "debito" ? "−" : "+"}${formatEuro(ledgerRemaining(item))}`,
       tone: item.direction === "debito" ? "text-rose-700" : "text-emerald-700",
       at: item.updatedAt,
     })),
