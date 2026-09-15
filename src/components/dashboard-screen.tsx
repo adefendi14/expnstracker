@@ -66,8 +66,8 @@ export function DashboardScreen() {
           <p className="text-sm text-muted-foreground">Saldo stimato</p>
           <p className="mt-2 text-4xl font-semibold tracking-tight">{formatEuro(totals.estimatedBalance)}</p>
           <p className="mt-2 text-xs leading-5 text-muted-foreground">
-            Salvadanai {formatEuroCompact(totals.piggyCurrent)} + crediti aperti{" "}
-            {formatEuroCompact(totals.openCredits)} − debiti aperti {formatEuroCompact(totals.openDebts)}.
+            Solo crediti aperti {formatEuroCompact(totals.openCredits)} − debiti aperti{" "}
+            {formatEuroCompact(totals.openDebts)}. I salvadanai restano a parte, per gli obiettivi.
           </p>
         </section>
       </div>
