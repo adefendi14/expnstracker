@@ -26,29 +26,25 @@ Open the same URL. Data never leaves the browser: clearing site data deletes mov
 
 ## Pubblica su GitHub Pages
 
-L’app è un sito statico. Un workflow GitHub Actions la pubblica su Pages a ogni push.
+Stesso schema di [arteco-srl](https://github.com/adefendi14/arteco-srl): push su `main` → GitHub Actions builda il sito statico → `peaceiris/actions-gh-pages` pubblica il ramo `gh-pages`.
 
-1. Crea un repository GitHub e carica questo progetto.
-2. Nel repo: **Settings → Pages → Build and deployment → Source: GitHub Actions**.
-3. Fai push (o lancia a mano **Actions → Deploy to GitHub Pages → Run workflow**).
-4. L’indirizzo sarà:
-   - sito progetto: `https://<utente>.github.io/<nome-repo>/`
-   - sito utente (`<utente>.github.io`): `https://<utente>.github.io/`
+1. Crea il repository GitHub (account `adefendi14`, nome consigliato `expnstracker`) e carica questo progetto.
+2. Il workflow `.github/workflows/deploy.yml` parte da solo sul push a `main`.
+3. Nel repo: **Settings → Pages → Build and deployment → Source: Deploy from a branch → Branch `gh-pages` / folder `/ (root)`**.
+4. L’indirizzo sarà `https://adefendi14.github.io/expnstracker/` (o `https://adefendi14.github.io/<nome-repo>/` se il repo ha un altro nome).
 
-Il `basePath` viene calcolato da solo dal nome del repository. Per forzarlo imposta `PAGES_BASE_PATH` nel job di build (lascialo vuoto per un sito in root, oppure usa ad esempio `/docs`).
+Il `basePath` viene calcolato da solo dal nome del repository (`GITHUB_REPOSITORY`), come `/arteco-srl/` in Vite. Per forzarlo imposta `PAGES_BASE_PATH` nel job di build.
 
-La prima pubblicazione può chiedere di approvare l’ambiente **github-pages** nella scheda Actions.
-
-I dati restano nel LocalStorage del browser. GitHub Pages non vede debiti, spese o salvadanai. Ogni dispositivo (e ogni origine) ha i propri dati.
+I dati restano nel LocalStorage del browser. GitHub Pages non vede debiti, spese o salvadanai.
 
 Per provare in locale la stessa build di Pages:
 
 ```bash
-GITHUB_PAGES=true GITHUB_REPOSITORY=tuoutente/tuorepo npm run build
+GITHUB_PAGES=true GITHUB_REPOSITORY=adefendi14/expnstracker npm run build
 npm start
 ```
 
-Poi apri `http://127.0.0.1:4317/tuorepo/`.
+Poi apri `http://127.0.0.1:4317/expnstracker/`.
 
 ## Install on iPhone (Safari → Aggiungi a Home)
 
@@ -74,5 +70,5 @@ On a Mac or Windows desktop, Chrome or Edge can also install it from the address
 - `src/app` — routes, PWA manifest, metadata, error/loading states
 - `src/components` — shell, dashboard, forms, lists
 - `src/lib/store.tsx` — LocalStorage persistence
-- `.github/workflows/pages.yml` — static export and deploy to GitHub Pages
+- `.github/workflows/deploy.yml` — static export to the `gh-pages` branch (same pattern as arteco-srl)
 - `public/icon-192.png`, `public/icon-512.png`, `public/apple-touch-icon.png` — home screen icons
