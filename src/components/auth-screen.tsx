@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type FormEvent } from "react";
+import { useRef, useState, useEffect, type FormEvent } from "react";
 import { toast } from "sonner";
 import { Field } from "@/components/field";
 import { SegmentedControl } from "@/components/segmented-control";
@@ -19,6 +19,10 @@ export function AuthScreen() {
   const [pending, setPending] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setMode(hasAccounts ? "accedi" : "registrati");
+  }, [hasAccounts]);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -61,26 +65,25 @@ export function AuthScreen() {
         ExpnsTracker
       </p>
       <h1 className="mt-2 text-3xl font-semibold tracking-tight">
-        {hasAccounts ? "Accedi al tuo account" : "Crea il primo account"}
+        {mode === "accedi" ? "Accedi" : hasAccounts ? "Nuovo account" : "Crea il primo account"}
       </h1>
       <p className="mt-2 text-sm leading-6 text-muted-foreground">
-        Ogni persona ha il suo spazio. Il database è un file SQLite su questo dispositivo: niente
-        cloud, niente account online.
+        {mode === "accedi"
+          ? "Entra con username e password di questo dispositivo. I dati restano nel file SQLite locale."
+          : "Ogni persona ha il suo spazio. Il database è un file SQLite su questo dispositivo: niente cloud."}
       </p>
 
-      {hasAccounts ? (
-        <div className="mt-6">
-          <SegmentedControl
-            value={mode}
-            onChange={setMode}
-            options={[
-              { value: "accedi", label: "Accedi" },
-              { value: "registrati", label: "Registrati" },
-            ]}
-            disabled={pending}
-          />
-        </div>
-      ) : null}
+      <div className="mt-6">
+        <SegmentedControl
+          value={mode}
+          onChange={setMode}
+          options={[
+            { value: "accedi", label: "Accedi" },
+            { value: "registrati", label: "Registrati" },
+          ]}
+          disabled={pending}
+        />
+      </div>
 
       <form className="mt-6 flex flex-col gap-4" onSubmit={onSubmit}>
         {mode === "registrati" ? (

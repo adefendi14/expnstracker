@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -17,6 +17,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { EmptyState } from "@/components/empty-state";
+import { Field } from "@/components/field";
 import { SegmentedControl } from "@/components/segmented-control";
 import { useStore } from "@/lib/store";
 import {
@@ -26,6 +27,7 @@ import {
   RISK_LABELS,
   formatEuro,
   formatShortDate,
+  parseEuroInput,
 } from "@/lib/format";
 import type {
   Expense,
@@ -55,6 +57,7 @@ export function ListsScreen({
   const [status, setStatus] = useState<StatusFilter>("aperti");
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Row | null>(null);
+  const [addError, setAddError] = useState("");
 
   const rows = useMemo(() => {
     const all: Row[] = [
@@ -169,9 +172,12 @@ export function ListsScreen({
         <ul className="flex flex-col gap-2">
           {rows.map((row) => (
             <li key={`${row.kind}-${row.item.id}`}>
-              <button
+                <button
                 type="button"
-                onClick={() => setSelected(row)}
+                onClick={() => {
+                  setAddError("");
+                  setSelected(row);
+                }}
                 className="flex w-full items-center gap-3 rounded-2xl bg-card px-4 py-3.5 text-left ring-1 ring-foreground/8"
               >
                 <RowPreview row={row} />
@@ -181,7 +187,15 @@ export function ListsScreen({
         </ul>
       )}
 
-      <Sheet open={Boolean(selected)} onOpenChange={(open) => !open && setSelected(null)}>
+      <Sheet
+        open={Boolean(selected)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelected(null);
+            setAddError("");
+          }
+        }}
+      >
         <SheetContent side="bottom" className="rounded-t-3xl pb-[max(1.5rem,env(safe-area-inset-bottom))]">
           {selected ? (
             <>
@@ -249,6 +263,66 @@ export function ListsScreen({
                   </>
                 ) : null}
                 {selected.item.notes ? <p>{selected.item.notes}</p> : null}
+                {selected.kind === "ledger" ? (
+                  <form
+                    className="mt-4 space-y-3 rounded-2xl bg-muted/70 p-3"
+                    onSubmit={(event: FormEvent<HTMLFormElement>) => {
+                      event.preventDefault();
+                      const parsed = parseEuroInput(
+                        String(new FormData(event.currentTarget).get("add-amount") ?? "")
+                      );
+                      if (parsed === null || parsed === 0) {
+                        setAddError("Inserisci l’importo da aggiungere.");
+                        return;
+                      }
+                      store.adjustLedger(selected.item.id, parsed);
+                      const nextAmount = Math.round((selected.item.amount + parsed) * 100) / 100;
+                      setSelected({
+                        kind: "ledger",
+                        item: {
+                          ...selected.item,
+                          amount: nextAmount,
+                          settled: false,
+                        },
+                      });
+                      event.currentTarget.reset();
+                      setAddError("");
+                      toast.success(
+                        `${formatEuro(parsed)} aggiunti al ${
+                          selected.item.direction === "debito" ? "debito" : "credito"
+                        }`
+                      );
+                    }}
+                  >
+                    <Field
+                      label={
+                        selected.item.direction === "debito"
+                          ? "Aggiungi al debito"
+                          : "Aggiungi al credito"
+                      }
+                      htmlFor="add-amount"
+                      hint="Il totale si aggiorna subito. Non serve riscrivere l’importo intero."
+                      error={addError || undefined}
+                    >
+                      <Input
+                        id="add-amount"
+                        name="add-amount"
+                        inputMode="decimal"
+                        autoComplete="off"
+                        placeholder="0,00"
+                        className="h-12 rounded-2xl px-3.5"
+                      />
+                    </Field>
+                    <button
+                      type="submit"
+                      className="inline-flex h-11 w-full items-center justify-center rounded-2xl bg-foreground px-4 text-sm font-medium text-background"
+                    >
+                      {selected.item.direction === "debito"
+                        ? "Aggiungi al debito"
+                        : "Aggiungi al credito"}
+                    </button>
+                  </form>
+                ) : null}
               </div>
               <SheetFooter className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 <Button
