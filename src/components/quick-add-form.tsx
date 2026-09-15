@@ -6,15 +6,8 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Field, FieldRow } from "@/components/field";
+import { Field, FieldRow, NativeSelect } from "@/components/field";
+import { SegmentedControl } from "@/components/segmented-control";
 import { useStore } from "@/lib/store";
 import {
   CATEGORY_LABELS,
@@ -43,21 +36,6 @@ const TAB_ITEMS = {
   ledger: "Debito / Credito",
   spesa: "Spesa",
   idea: "Idea di investimento",
-};
-
-const CATEGORY_ITEMS = Object.fromEntries(
-  EXPENSE_CATEGORIES.map((key) => [key, CATEGORY_LABELS[key]])
-);
-
-const PRIORITY_ITEMS = Object.fromEntries(PRIORITIES.map((key) => [key, PRIORITY_LABELS[key]]));
-const RISK_ITEMS = Object.fromEntries(RISKS.map((key) => [key, RISK_LABELS[key]]));
-const AMOUNT_KIND_ITEMS = {
-  stimato: "Importo stimato",
-  attuale: "Valore attuale",
-};
-const DIRECTION_ITEMS = {
-  debito: "Debito",
-  credito: "Credito",
 };
 
 const inputClass = "h-12 rounded-2xl px-3.5";
@@ -209,46 +187,41 @@ export function QuickAddForm({
         </p>
       </div>
 
-      <Tabs
+      <SegmentedControl
         value={tab}
-        onValueChange={(value) => {
+        onChange={(next) => {
           if (editing) return;
-          setTab(value as FormTab);
+          setTab(next);
           setErrors({});
         }}
-      >
-        <TabsList className="h-auto w-full rounded-2xl p-1">
-          <TabsTrigger value="ledger" className="h-10 rounded-xl px-2 text-xs sm:text-sm">
-            Debito/Credito
-          </TabsTrigger>
-          <TabsTrigger value="spesa" className="h-10 rounded-xl px-2 text-xs sm:text-sm">
-            Spesa
-          </TabsTrigger>
-          <TabsTrigger value="idea" className="h-10 rounded-xl px-2 text-xs sm:text-sm">
-            Idea
-          </TabsTrigger>
-        </TabsList>
+        disabled={editing}
+        options={[
+          { value: "ledger", label: "Debito/Credito" },
+          { value: "spesa", label: "Spesa" },
+          { value: "idea", label: "Idea" },
+        ]}
+      />
 
-        <TabsContent value="ledger" className="mt-5 flex flex-col gap-4">
+      {tab === "ledger" ? (
+        <div className="flex flex-col gap-4">
           <Field label="Tipo">
-            <Select value={direction} onValueChange={(value) => value && setDirection(value)} items={DIRECTION_ITEMS}>
-              <SelectTrigger className={`${inputClass} w-full`}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="debito">Debito (devo)</SelectItem>
-                <SelectItem value="credito">Credito (mi devono)</SelectItem>
-              </SelectContent>
-            </Select>
+            <NativeSelect
+              value={direction}
+              onChange={(event) => setDirection(event.target.value as DebtDirection)}
+            >
+              <option value="debito">Debito (devo)</option>
+              <option value="credito">Credito (mi devono)</option>
+            </NativeSelect>
           </Field>
           <Field label="Chi" htmlFor="person" error={errors.person}>
             <Input
               id="person"
+              name="person"
               value={person}
               onChange={(event) => setPerson(event.target.value)}
               placeholder="Marco, inquilino, banca…"
               className={inputClass}
-              autoComplete="name"
+              autoComplete="off"
             />
           </Field>
           <FieldRow>
@@ -256,6 +229,7 @@ export function QuickAddForm({
               <Input
                 id="ledger-amount"
                 inputMode="decimal"
+                autoComplete="off"
                 value={ledgerAmount}
                 onChange={(event) => setLedgerAmount(event.target.value)}
                 placeholder="0,00"
@@ -281,13 +255,16 @@ export function QuickAddForm({
               className="min-h-24 rounded-2xl px-3.5"
             />
           </Field>
-        </TabsContent>
+        </div>
+      ) : null}
 
-        <TabsContent value="spesa" className="mt-5 flex flex-col gap-4">
+      {tab === "spesa" ? (
+        <div className="flex flex-col gap-4">
           <Field label="Importo" htmlFor="expense-amount" error={errors.expenseAmount}>
             <Input
               id="expense-amount"
               inputMode="decimal"
+              autoComplete="off"
               value={expenseAmount}
               onChange={(event) => setExpenseAmount(event.target.value)}
               placeholder="0,00"
@@ -296,18 +273,16 @@ export function QuickAddForm({
           </Field>
           <FieldRow>
             <Field label="Categoria">
-              <Select value={category} onValueChange={(value) => value && setCategory(value)} items={CATEGORY_ITEMS}>
-                <SelectTrigger className={`${inputClass} w-full`}>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {EXPENSE_CATEGORIES.map((key) => (
-                    <SelectItem key={key} value={key}>
-                      {CATEGORY_LABELS[key]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <NativeSelect
+                value={category}
+                onChange={(event) => setCategory(event.target.value as ExpenseCategory)}
+              >
+                {EXPENSE_CATEGORIES.map((key) => (
+                  <option key={key} value={key}>
+                    {CATEGORY_LABELS[key]}
+                  </option>
+                ))}
+              </NativeSelect>
             </Field>
             <Field label="Data" htmlFor="expense-date" error={errors.expenseDate}>
               <Input
@@ -328,9 +303,11 @@ export function QuickAddForm({
               className="min-h-24 rounded-2xl px-3.5"
             />
           </Field>
-        </TabsContent>
+        </div>
+      ) : null}
 
-        <TabsContent value="idea" className="mt-5 flex flex-col gap-4">
+      {tab === "idea" ? (
+        <div className="flex flex-col gap-4">
           <Field label="Titolo o strumento" htmlFor="idea-title" error={errors.title}>
             <Input
               id="idea-title"
@@ -345,6 +322,7 @@ export function QuickAddForm({
               <Input
                 id="idea-amount"
                 inputMode="decimal"
+                autoComplete="off"
                 value={ideaAmount}
                 onChange={(event) => setIdeaAmount(event.target.value)}
                 placeholder="0,00"
@@ -352,49 +330,36 @@ export function QuickAddForm({
               />
             </Field>
             <Field label="Tipo importo">
-              <Select
+              <NativeSelect
                 value={amountKind}
-                onValueChange={(value) => value && setAmountKind(value)}
-                items={AMOUNT_KIND_ITEMS}
+                onChange={(event) => setAmountKind(event.target.value as AmountKind)}
               >
-                <SelectTrigger className={`${inputClass} w-full`}>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="stimato">Importo stimato</SelectItem>
-                  <SelectItem value="attuale">Valore attuale</SelectItem>
-                </SelectContent>
-              </Select>
+                <option value="stimato">Importo stimato</option>
+                <option value="attuale">Valore attuale</option>
+              </NativeSelect>
             </Field>
           </FieldRow>
           <FieldRow>
             <Field label="Priorità">
-              <Select value={priority} onValueChange={(value) => value && setPriority(value)} items={PRIORITY_ITEMS}>
-                <SelectTrigger className={`${inputClass} w-full`}>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PRIORITIES.map((key) => (
-                    <SelectItem key={key} value={key}>
-                      {PRIORITY_LABELS[key]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <NativeSelect
+                value={priority}
+                onChange={(event) => setPriority(event.target.value as Priority)}
+              >
+                {PRIORITIES.map((key) => (
+                  <option key={key} value={key}>
+                    {PRIORITY_LABELS[key]}
+                  </option>
+                ))}
+              </NativeSelect>
             </Field>
             <Field label="Rischio">
-              <Select value={risk} onValueChange={(value) => value && setRisk(value)} items={RISK_ITEMS}>
-                <SelectTrigger className={`${inputClass} w-full`}>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {RISKS.map((key) => (
-                    <SelectItem key={key} value={key}>
-                      {RISK_LABELS[key]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <NativeSelect value={risk} onChange={(event) => setRisk(event.target.value as Risk)}>
+                {RISKS.map((key) => (
+                  <option key={key} value={key}>
+                    {RISK_LABELS[key]}
+                  </option>
+                ))}
+              </NativeSelect>
             </Field>
           </FieldRow>
           <Field label="Note" htmlFor="idea-notes" hint="Facoltative">
@@ -416,8 +381,8 @@ export function QuickAddForm({
               className={inputClass}
             />
           </Field>
-        </TabsContent>
-      </Tabs>
+        </div>
+      ) : null}
 
       <div className="flex flex-col gap-2 pt-2 sm:flex-row">
         <Button type="button" className="h-12 flex-1 rounded-2xl text-base" onClick={handleSave}>

@@ -8,7 +8,6 @@ import { Lightbulb, Receipt, Scale, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Sheet,
   SheetContent,
@@ -18,6 +17,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { EmptyState } from "@/components/empty-state";
+import { SegmentedControl } from "@/components/segmented-control";
 import { useStore } from "@/lib/store";
 import {
   CATEGORY_ACCENT,
@@ -115,25 +115,17 @@ export function ListsScreen({
         />
       </div>
 
-      <Tabs value={kind} onValueChange={(value) => setKind(value as ListKind)}>
-        <TabsList className="h-auto w-full flex-wrap rounded-2xl p-1">
-          <TabsTrigger value="tutti" className="h-9 rounded-xl text-xs">
-            Tutti
-          </TabsTrigger>
-          <TabsTrigger value="debiti" className="h-9 rounded-xl text-xs">
-            Debiti
-          </TabsTrigger>
-          <TabsTrigger value="crediti" className="h-9 rounded-xl text-xs">
-            Crediti
-          </TabsTrigger>
-          <TabsTrigger value="spese" className="h-9 rounded-xl text-xs">
-            Spese
-          </TabsTrigger>
-          <TabsTrigger value="idee" className="h-9 rounded-xl text-xs">
-            Idee
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
+      <SegmentedControl
+        value={kind}
+        onChange={setKind}
+        options={[
+          { value: "tutti", label: "Tutti" },
+          { value: "debiti", label: "Debiti" },
+          { value: "crediti", label: "Crediti" },
+          { value: "spese", label: "Spese" },
+          { value: "idee", label: "Idee" },
+        ]}
+      />
 
       <div className="flex gap-2">
         {(["aperti", "chiusi", "tutti"] as const).map((value) => (
