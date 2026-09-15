@@ -9,6 +9,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Sheet,
   SheetContent,
   SheetDescription,
@@ -18,7 +26,6 @@ import {
 } from "@/components/ui/sheet";
 import { EmptyState } from "@/components/empty-state";
 import { Field } from "@/components/field";
-import { Progress } from "@/components/ui/progress";
 import { SegmentedControl } from "@/components/segmented-control";
 import { useStore } from "@/lib/store";
 import {
@@ -30,7 +37,6 @@ import {
   formatEuroCompact,
   formatShortDate,
   ledgerPaid,
-  ledgerPercent,
   ledgerRemaining,
   parseEuroInput,
 } from "@/lib/format";
@@ -51,6 +57,157 @@ function stamp(row: Row) {
   return row.item.updatedAt || row.item.createdAt;
 }
 
+const inputClass = "h-12 rounded-2xl px-3.5";
+
+function LedgerAdjustDialog({
+  item,
+  open,
+  onOpenChange,
+  onEdit,
+}: {
+  item: LedgerEntry;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onEdit: () => void;
+}) {
+  const store = useStore();
+  const live = store.data.ledger.find((entry) => entry.id === item.id) ?? item;
+  const [mode, setMode] = useState<"versa" | "obiettivo">("versa");
+  const [error, setError] = useState("");
+  const remaining = ledgerRemaining(live);
+  const paid = ledgerPaid(live);
+  const isDebt = live.direction === "debito";
+
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const parsed = parseEuroInput(String(new FormData(event.currentTarget).get("amount") ?? ""));
+    if (parsed === null || parsed === 0) {
+      setError("Inserisci un importo valido.");
+      return;
+    }
+    if (mode === "versa") {
+      if (parsed > remaining && remaining > 0) {
+        setError(`Puoi versare al massimo ${formatEuro(remaining)}.`);
+        return;
+      }
+      if (remaining === 0 && !live.settled) {
+        setError("Alza prima l’obiettivo, poi versa.");
+        return;
+      }
+      store.adjustLedgerPaid(live.id, parsed);
+      toast.success(isDebt ? "Versamento sul debito" : "Versamento sul credito");
+    } else {
+      store.adjustLedgerTarget(live.id, parsed);
+      toast.success("Obiettivo aumentato");
+    }
+    setError("");
+    onOpenChange(false);
+  }
+
+  const title =
+    mode === "obiettivo" ? "Aumenta obiettivo" : isDebt ? "Versa sul debito" : "Versa sul credito";
+  const description =
+    mode === "obiettivo"
+      ? `«${live.person}». Obiettivo ${formatEuroCompact(live.amount)}, già versati ${formatEuroCompact(paid)}.`
+      : isDebt
+        ? `«${live.person}». Resta da dare ${formatEuroCompact(remaining)}.`
+        : `«${live.person}». Resta da ricevere ${formatEuroCompact(remaining)}.`;
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        onOpenChange(next);
+        if (!next) {
+          setError("");
+          setMode("versa");
+        }
+      }}
+    >
+      <DialogContent className="rounded-3xl sm:max-w-md">
+        <form key={open ? "open" : "closed"} onSubmit={submit} className="flex flex-col gap-4">
+          <DialogHeader>
+            <DialogTitle>{title}</DialogTitle>
+            <DialogDescription>
+              {description}
+              {live.dueDate ? ` Scade il ${formatShortDate(live.dueDate)}.` : ""}
+              {live.settled ? " Saldato." : ""}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              type="button"
+              variant={mode === "versa" ? "default" : "outline"}
+              className="h-11 rounded-2xl"
+              onClick={() => {
+                setMode("versa");
+                setError("");
+              }}
+            >
+              Versa
+            </Button>
+            <Button
+              type="button"
+              variant={mode === "obiettivo" ? "default" : "outline"}
+              className="h-11 rounded-2xl"
+              onClick={() => {
+                setMode("obiettivo");
+                setError("");
+              }}
+            >
+              Aumenta obiettivo
+            </Button>
+          </div>
+          <Field label="Importo" error={error}>
+            <Input
+              name="amount"
+              inputMode="decimal"
+              autoComplete="off"
+              placeholder="0,00"
+              className={inputClass}
+            />
+          </Field>
+          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 text-sm">
+            <button type="button" className="text-muted-foreground hover:text-foreground" onClick={onEdit}>
+              Modifica
+            </button>
+            <button
+              type="button"
+              className="text-muted-foreground hover:text-foreground"
+              onClick={() => {
+                store.updateLedger(live.id, { settled: !live.settled });
+                toast.success(live.settled ? "Riaperta" : "Segnata come saldata");
+                onOpenChange(false);
+              }}
+            >
+              {live.settled ? "Riapri" : "Segna come saldato"}
+            </button>
+            <button
+              type="button"
+              className="text-destructive hover:text-destructive/80"
+              onClick={() => {
+                store.deleteLedger(live.id);
+                toast.success("Eliminato");
+                onOpenChange(false);
+              }}
+            >
+              Elimina
+            </button>
+          </div>
+          <DialogFooter>
+            <button
+              type="submit"
+              className="inline-flex h-11 items-center justify-center rounded-2xl bg-primary px-4 text-sm font-medium text-primary-foreground"
+            >
+              Conferma
+            </button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export function ListsScreen({
   initialKind = "tutti",
 }: {
@@ -62,8 +219,6 @@ export function ListsScreen({
   const [status, setStatus] = useState<StatusFilter>("aperti");
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Row | null>(null);
-  const [addError, setAddError] = useState("");
-  const [ledgerAction, setLedgerAction] = useState<"versa" | "obiettivo">("versa");
 
   const rows = useMemo(() => {
     const all: Row[] = [
@@ -178,13 +333,9 @@ export function ListsScreen({
         <ul className="flex flex-col gap-2">
           {rows.map((row) => (
             <li key={`${row.kind}-${row.item.id}`}>
-                <button
+              <button
                 type="button"
-                onClick={() => {
-                  setAddError("");
-                  setLedgerAction("versa");
-                  setSelected(row);
-                }}
+                onClick={() => setSelected(row)}
                 className="flex w-full items-center gap-3 rounded-2xl bg-card px-4 py-3.5 text-left ring-1 ring-foreground/8"
               >
                 <RowPreview row={row} />
@@ -194,268 +345,110 @@ export function ListsScreen({
         </ul>
       )}
 
-      <Sheet
-        open={Boolean(selected)}
-        onOpenChange={(open) => {
-          if (!open) {
+      {selected?.kind === "ledger" ? (
+        <LedgerAdjustDialog
+          item={selected.item}
+          open
+          onOpenChange={(open) => {
+            if (!open) setSelected(null);
+          }}
+          onEdit={() => {
+            const href = editHref(selected);
             setSelected(null);
-            setAddError("");
-            setLedgerAction("versa");
-          }
-        }}
-      >
-        <SheetContent side="bottom" className="rounded-t-3xl pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-          {selected ? (
-            <>
-              <SheetHeader>
-                <SheetTitle>
-                  {selected.kind === "ledger"
-                    ? selected.item.person
-                    : selected.kind === "expense"
+            router.push(href);
+          }}
+        />
+      ) : (
+        <Sheet
+          open={Boolean(selected)}
+          onOpenChange={(open) => {
+            if (!open) setSelected(null);
+          }}
+        >
+          <SheetContent side="bottom" className="rounded-t-3xl pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+            {selected ? (
+              <>
+                <SheetHeader>
+                  <SheetTitle>
+                    {selected.kind === "expense"
                       ? CATEGORY_LABELS[selected.item.category]
                       : selected.item.title}
-                </SheetTitle>
-                <SheetDescription>
-                  {selected.kind === "ledger"
-                    ? selected.item.direction === "debito"
-                      ? "Debito"
-                      : "Credito"
-                    : selected.kind === "expense"
-                      ? "Spesa"
-                      : "Idea di investimento"}
-                </SheetDescription>
-              </SheetHeader>
-              <div className="space-y-3 px-4 text-sm">
-                <p className="text-2xl font-semibold tracking-tight">
-                  {formatEuro(
-                    selected.kind === "ledger"
-                      ? ledgerRemaining(selected.item)
-                      : selected.kind === "expense"
-                        ? selected.item.amount
-                        : selected.item.amount
-                  )}
-                </p>
-                {selected.kind === "ledger" ? (
-                  <>
-                    <p className="text-sm text-muted-foreground">
-                      {formatEuroCompact(ledgerPaid(selected.item))} /{" "}
-                      {formatEuroCompact(selected.item.amount)} — {ledgerPercent(selected.item)}%
-                    </p>
-                    <Progress value={ledgerPercent(selected.item)} className="mt-1" />
-                    {selected.item.dueDate ? (
-                      <p className="text-muted-foreground">Scadenza {formatShortDate(selected.item.dueDate)}</p>
-                    ) : null}
-                    <p className={selected.item.settled ? "text-emerald-700" : "text-muted-foreground"}>
-                      {selected.item.settled
-                        ? "Saldato"
-                        : selected.item.direction === "debito"
-                          ? "Aperto · resta da dare"
-                          : "Aperto · resta da ricevere"}
-                    </p>
-                  </>
-                ) : null}
-                {selected.kind === "expense" ? (
-                  <p className="text-muted-foreground">{formatShortDate(selected.item.date)}</p>
-                ) : null}
-                {selected.kind === "idea" ? (
-                  <>
-                    <p className="text-muted-foreground">
-                      {selected.item.amountKind === "stimato" ? "Importo stimato" : "Valore attuale"} · priorità{" "}
-                      {PRIORITY_LABELS[selected.item.priority].toLowerCase()} · rischio{" "}
-                      {RISK_LABELS[selected.item.risk].toLowerCase()}
-                    </p>
-                    {selected.item.link ? (
-                      <a
-                        href={selected.item.link}
-                        className="text-foreground underline underline-offset-4"
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        Apri link
-                      </a>
-                    ) : null}
-                    <p className={selected.item.completed ? "text-emerald-700" : "text-muted-foreground"}>
-                      {selected.item.completed ? "Completata" : "Aperta"}
-                    </p>
-                  </>
-                ) : null}
-                {selected.item.notes ? <p>{selected.item.notes}</p> : null}
-                {selected.kind === "ledger" ? (
-                  <form
-                    className="mt-4 space-y-3 rounded-2xl bg-muted/70 p-3"
-                    onSubmit={(event: FormEvent<HTMLFormElement>) => {
-                      event.preventDefault();
-                      const parsed = parseEuroInput(
-                        String(new FormData(event.currentTarget).get("add-amount") ?? "")
-                      );
-                      if (parsed === null || parsed === 0) {
-                        setAddError("Inserisci un importo valido.");
-                        return;
-                      }
-                      if (ledgerAction === "versa") {
-                        const remaining = ledgerRemaining(selected.item);
-                        if (parsed > remaining && remaining > 0) {
-                          setAddError(
-                            `Puoi versare al massimo ${formatEuro(remaining)}.`
-                          );
-                          return;
-                        }
-                        if (remaining === 0 && !selected.item.settled) {
-                          setAddError("Alza prima l’obiettivo, poi versa.");
-                          return;
-                        }
-                        store.adjustLedgerPaid(selected.item.id, parsed);
-                        const paid = Math.min(
-                          selected.item.amount,
-                          Math.round((ledgerPaid(selected.item) + parsed) * 100) / 100
-                        );
-                        setSelected({
-                          kind: "ledger",
-                          item: {
-                            ...selected.item,
-                            paid,
-                            settled: paid >= selected.item.amount,
-                          },
-                        });
-                        toast.success(
-                          selected.item.direction === "debito"
-                            ? "Versamento sul debito"
-                            : "Versamento sul credito"
-                        );
-                      } else {
-                        store.adjustLedgerTarget(selected.item.id, parsed);
-                        const amount = Math.round((selected.item.amount + parsed) * 100) / 100;
-                        setSelected({
-                          kind: "ledger",
-                          item: {
-                            ...selected.item,
-                            amount,
-                            settled: ledgerPaid(selected.item) >= amount,
-                          },
-                        });
-                        toast.success("Obiettivo aumentato");
-                      }
-                      event.currentTarget.reset();
-                      setAddError("");
-                    }}
-                  >
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        type="button"
-                        className={`h-10 rounded-xl text-sm font-medium ${
-                          ledgerAction === "versa"
-                            ? "bg-foreground text-background"
-                            : "bg-background text-muted-foreground"
-                        }`}
-                        onClick={() => {
-                          setLedgerAction("versa");
-                          setAddError("");
-                        }}
-                      >
-                        Versa
-                      </button>
-                      <button
-                        type="button"
-                        className={`h-10 rounded-xl text-sm font-medium ${
-                          ledgerAction === "obiettivo"
-                            ? "bg-foreground text-background"
-                            : "bg-background text-muted-foreground"
-                        }`}
-                        onClick={() => {
-                          setLedgerAction("obiettivo");
-                          setAddError("");
-                        }}
-                      >
-                        Aumenta obiettivo
-                      </button>
-                    </div>
-                    <Field
-                      label={ledgerAction === "versa" ? "Importo da versare" : "Quanto alzare l’obiettivo"}
-                      htmlFor="add-amount"
-                      hint={
-                        ledgerAction === "versa"
-                          ? "Come un salvadanaio: butti dentro i soldi e il debito/credito scende."
-                          : "Se cresce nel tempo, alza l’obiettivo senza toccare i versamenti."
-                      }
-                      error={addError || undefined}
-                    >
-                      <Input
-                        id="add-amount"
-                        name="add-amount"
-                        inputMode="decimal"
-                        autoComplete="off"
-                        placeholder="0,00"
-                        className="h-12 rounded-2xl px-3.5"
-                      />
-                    </Field>
-                    <button
-                      type="submit"
-                      className="inline-flex h-11 w-full items-center justify-center rounded-2xl bg-foreground px-4 text-sm font-medium text-background"
-                    >
-                      {ledgerAction === "versa"
-                        ? selected.item.direction === "debito"
-                          ? "Versa sul debito"
-                          : "Versa sul credito"
-                        : "Aumenta obiettivo"}
-                    </button>
-                  </form>
-                ) : null}
-              </div>
-              <SheetFooter className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                <Button
-                  className="h-11 rounded-2xl"
-                  variant="outline"
-                  onClick={() => {
-                    const href = editHref(selected);
-                    setSelected(null);
-                    router.push(href);
-                  }}
-                >
-                  Modifica
-                </Button>
-                {selected.kind === "ledger" ? (
+                  </SheetTitle>
+                  <SheetDescription>
+                    {selected.kind === "expense" ? "Spesa" : "Idea di investimento"}
+                  </SheetDescription>
+                </SheetHeader>
+                <div className="space-y-3 px-4 text-sm">
+                  <p className="text-2xl font-semibold tracking-tight">{formatEuro(selected.item.amount)}</p>
+                  {selected.kind === "expense" ? (
+                    <p className="text-muted-foreground">{formatShortDate(selected.item.date)}</p>
+                  ) : null}
+                  {selected.kind === "idea" ? (
+                    <>
+                      <p className="text-muted-foreground">
+                        {selected.item.amountKind === "stimato" ? "Importo stimato" : "Valore attuale"} · priorità{" "}
+                        {PRIORITY_LABELS[selected.item.priority].toLowerCase()} · rischio{" "}
+                        {RISK_LABELS[selected.item.risk].toLowerCase()}
+                      </p>
+                      {selected.item.link ? (
+                        <a
+                          href={selected.item.link}
+                          className="text-foreground underline underline-offset-4"
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Apri link
+                        </a>
+                      ) : null}
+                      <p className={selected.item.completed ? "text-emerald-700" : "text-muted-foreground"}>
+                        {selected.item.completed ? "Completata" : "Aperta"}
+                      </p>
+                    </>
+                  ) : null}
+                  {selected.item.notes ? <p>{selected.item.notes}</p> : null}
+                </div>
+                <SheetFooter className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                   <Button
                     className="h-11 rounded-2xl"
-                    variant={selected.item.settled ? "secondary" : "default"}
+                    variant="outline"
                     onClick={() => {
-                      store.updateLedger(selected.item.id, { settled: !selected.item.settled });
-                      toast.success(selected.item.settled ? "Riaperta" : "Segnata come saldata");
+                      const href = editHref(selected);
+                      setSelected(null);
+                      router.push(href);
+                    }}
+                  >
+                    Modifica
+                  </Button>
+                  {selected.kind === "idea" ? (
+                    <Button
+                      className="h-11 rounded-2xl"
+                      onClick={() => {
+                        store.updateIdea(selected.item.id, { completed: !selected.item.completed });
+                        toast.success(selected.item.completed ? "Idea riaperta" : "Idea completata");
+                        setSelected(null);
+                      }}
+                    >
+                      {selected.item.completed ? "Riapri" : "Segna come completata"}
+                    </Button>
+                  ) : null}
+                  <Button
+                    className="h-11 rounded-2xl sm:col-span-2"
+                    variant="destructive"
+                    onClick={() => {
+                      if (selected.kind === "expense") store.deleteExpense(selected.item.id);
+                      if (selected.kind === "idea") store.deleteIdea(selected.item.id);
+                      toast.success("Eliminato");
                       setSelected(null);
                     }}
                   >
-                    {selected.item.settled ? "Riapri" : "Segna come saldato"}
+                    Elimina
                   </Button>
-                ) : null}
-                {selected.kind === "idea" ? (
-                  <Button
-                    className="h-11 rounded-2xl"
-                    onClick={() => {
-                      store.updateIdea(selected.item.id, { completed: !selected.item.completed });
-                      toast.success(selected.item.completed ? "Idea riaperta" : "Idea completata");
-                      setSelected(null);
-                    }}
-                  >
-                    {selected.item.completed ? "Riapri" : "Segna come completata"}
-                  </Button>
-                ) : null}
-                <Button
-                  className="h-11 rounded-2xl sm:col-span-2"
-                  variant="destructive"
-                  onClick={() => {
-                    if (selected.kind === "ledger") store.deleteLedger(selected.item.id);
-                    if (selected.kind === "expense") store.deleteExpense(selected.item.id);
-                    if (selected.kind === "idea") store.deleteIdea(selected.item.id);
-                    toast.success("Eliminato");
-                    setSelected(null);
-                  }}
-                >
-                  Elimina
-                </Button>
-              </SheetFooter>
-            </>
-          ) : null}
-        </SheetContent>
-      </Sheet>
+                </SheetFooter>
+              </>
+            ) : null}
+          </SheetContent>
+        </Sheet>
+      )}
     </div>
   );
 }
