@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type FormEvent } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -112,8 +112,7 @@ export function QuickAddForm({
     router.push(tab === "idea" ? "/elenco?tipo=idee" : tab === "spesa" ? "/elenco?tipo=spese" : "/elenco");
   }
 
-  function handleSave(event: FormEvent) {
-    event.preventDefault();
+  function handleSave() {
     const nextErrors: Record<string, string> = {};
 
     if (tab === "ledger") {
@@ -200,7 +199,7 @@ export function QuickAddForm({
   }
 
   return (
-    <form onSubmit={handleSave} className="mx-auto flex w-full max-w-2xl flex-col gap-5 px-4 py-6 md:px-8">
+    <div className="mx-auto flex w-full max-w-2xl flex-col gap-5 px-4 py-6 md:px-8">
       <div>
         <h1 className="text-3xl font-semibold tracking-tight">
           {editing ? "Modifica" : "Aggiungi"}
@@ -421,7 +420,7 @@ export function QuickAddForm({
       </Tabs>
 
       <div className="flex flex-col gap-2 pt-2 sm:flex-row">
-        <Button type="submit" className="h-12 flex-1 rounded-2xl text-base">
+        <Button type="button" className="h-12 flex-1 rounded-2xl text-base" onClick={handleSave}>
           {editing ? "Salva modifiche" : "Salva"}
         </Button>
         <Button
@@ -434,6 +433,6 @@ export function QuickAddForm({
         </Button>
       </div>
       <p className="text-center text-xs text-muted-foreground">{TAB_ITEMS[tab]} · valuta in euro</p>
-    </form>
+    </div>
   );
 }
