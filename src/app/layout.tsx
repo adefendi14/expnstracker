@@ -25,6 +25,7 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
+      { url: withBase("/favicon.svg"), type: "image/svg+xml" },
       { url: withBase("/icon-192.png"), sizes: "192x192", type: "image/png" },
       { url: withBase("/icon-512.png"), sizes: "512x512", type: "image/png" },
     ],
@@ -53,6 +54,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="ExpnsTracker" />
+        <link rel="icon" href={withBase("/favicon.svg")} type="image/svg+xml" />
         <link rel="apple-touch-icon" href={withBase("/apple-touch-icon.png")} />
       </head>
       <body className="min-h-full bg-background font-sans text-foreground">
