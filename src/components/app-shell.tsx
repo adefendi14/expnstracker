@@ -28,14 +28,14 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-dvh bg-background">
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-foreground/6 bg-card/80 px-4 py-8 backdrop-blur-xl md:flex">
-        <div className="flex items-center gap-3 px-3">
-          <BrandMark className="size-11" size={44} />
-          <div className="min-w-0">
+        <div className="px-3">
+          <div className="flex items-center gap-2.5">
+            <BrandMark className="size-9" size={36} />
             <p className="text-xs font-medium tracking-[0.18em] text-muted-foreground uppercase">
               ExpnsTracker
             </p>
-            <p className="mt-0.5 text-lg font-semibold tracking-tight">I tuoi soldi, chiari.</p>
           </div>
+          <p className="mt-2 text-lg font-semibold tracking-tight">I tuoi soldi, chiari.</p>
         </div>
         <nav className="mt-10 flex flex-col gap-1">
           {NAV.map((item) => {
