@@ -62,6 +62,8 @@ Use Safari (Chrome on iOS cannot install a standalone PWA).
 4. Confirm the name **ExpnsTracker** and tap **Aggiungi**.
 5. Open the new Home Screen icon. The app runs standalone, without Safari chrome.
 
+To **import a database** from the Home Screen app: tap **Importa database**, then in Files go to the folder where you saved `expnstracker.sqlite` (often **Browse → Chrome** or **Download**) and tap the file. It stays selectable even if iOS shows a generic document icon instead of SQLite.
+
 On a Mac or Windows desktop, Chrome or Edge can also install it from the address bar (Install app / Installa app).
 
 ## Come aprire l’app offline (iPhone)
@@ -77,7 +79,7 @@ La prima visita serve internet. Poi Home / Aggiungi a Home apre Riepilogo anche 
 ## What you can do
 
 - **Account**: create users, log in, log out. Passwords are hashed with PBKDF2 on the device.
-- **File SQLite**: export / import `expnstracker.sqlite` to move the whole database (all accounts) between browsers.
+- **File SQLite**: export / import `expnstracker.sqlite` to move the whole database (all accounts) between browsers. On iPhone, Files used to grey out `.sqlite` because it is not a known type; import now accepts any file and checks the SQLite header.
 - **Riepilogo**: estimated balance (open credits − open debts only). Piggy banks are separate goal trackers.
 - **Aggiungi**: one form with tabs for Debito/Credito, Spesa, and Idea di investimento.
 - **Salvadanai**: create euro targets, add or withdraw funds, see `450€ / 1000€ — 45%`.

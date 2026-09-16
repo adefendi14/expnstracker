@@ -6,6 +6,7 @@ import { BrandMark } from "@/components/brand-mark";
 import { Field } from "@/components/field";
 import { SegmentedControl } from "@/components/segmented-control";
 import { Input } from "@/components/ui/input";
+import { SqliteFileInput } from "@/components/sqlite-file-input";
 import { useStore } from "@/lib/store";
 
 const inputClass = "h-12 rounded-2xl px-3.5";
@@ -153,18 +154,13 @@ export function AuthScreen() {
       <div className="mt-8 border-t border-foreground/8 pt-6">
         <p className="text-xs leading-5 text-muted-foreground">
           Hai già un file <span className="font-medium text-foreground">expnstracker.sqlite</span>?
-          Importalo per riprendere account e movimenti su questo browser.
+          Importalo per riprendere account e movimenti su questo browser. Su iPhone puoi
+          selezionarlo anche se File lo mostra come documento generico.
         </p>
-        <input
-          ref={fileRef}
-          type="file"
-          accept=".sqlite,.db,application/vnd.sqlite3"
-          className="hidden"
-          onChange={(event) => {
-            const file = event.target.files?.[0];
-            event.target.value = "";
-            void onImport(file);
-          }}
+        <SqliteFileInput
+          inputRef={fileRef}
+          disabled={pending}
+          onFile={(file) => void onImport(file)}
         />
         <button
           type="button"

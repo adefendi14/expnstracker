@@ -20,6 +20,7 @@ import {
   type UserAccount,
 } from "@/lib/types";
 import { isThisMonth, ledgerPaid, ledgerRemaining } from "@/lib/format";
+import { EXPORT_DATABASE_MIME } from "@/lib/import-file";
 import { hashPassword, verifyPassword } from "@/lib/password";
 import {
   countUsers,
@@ -323,7 +324,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const exportDatabase = useCallback(() => {
     const bytes = exportSqliteBytes();
-    const blob = new Blob([bytes as BlobPart], { type: "application/vnd.sqlite3" });
+    const blob = new Blob([bytes as BlobPart], { type: EXPORT_DATABASE_MIME });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;

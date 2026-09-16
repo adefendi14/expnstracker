@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import { toast } from "sonner";
 import { LogOut, Download, Upload } from "lucide-react";
+import { SqliteFileInput } from "@/components/sqlite-file-input";
 import { useStore } from "@/lib/store";
 
 export function AccountMenu() {
@@ -27,17 +28,7 @@ export function AccountMenu() {
         <p className="truncate text-sm font-medium">{user.name}</p>
         <p className="truncate text-xs text-muted-foreground">@{user.username}</p>
       </div>
-      <input
-        ref={fileRef}
-        type="file"
-        accept=".sqlite,.db,application/vnd.sqlite3"
-        className="hidden"
-        onChange={(event) => {
-          const file = event.target.files?.[0];
-          event.target.value = "";
-          void onImport(file);
-        }}
-      />
+      <SqliteFileInput inputRef={fileRef} onFile={(file) => void onImport(file)} />
       <button
         type="button"
         className="flex h-10 items-center gap-2 rounded-xl px-2 text-left text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
