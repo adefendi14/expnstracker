@@ -47,7 +47,7 @@ function urlsFromOut() {
   }
   for (const file of walk(outDir)) {
     const rel = relative(outDir, file).split("\\").join("/");
-    if (!rel || rel === "sw.js") continue;
+    if (!rel || rel === "sw.js" || rel === ".nojekyll") continue;
     if (rel.endsWith(".map") || rel.endsWith(".DS_Store")) continue;
     urls.add(`./${rel}`);
     if (rel === "index.html") {
