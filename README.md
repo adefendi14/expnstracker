@@ -79,4 +79,5 @@ On a Mac or Windows desktop, Chrome or Edge can also install it from the address
 - `src/lib/store.tsx` — accounts and per-user queries
 - `.github/workflows/deploy.yml` — static export to the `gh-pages` branch (same pattern as arteco-srl)
 - `public/sql-wasm.wasm` — SQLite engine
-- `public/icon-192.png`, `public/icon-512.png`, `public/apple-touch-icon.png` — home screen icons
+- `public/logo.svg`, `public/icon-192.png`, `public/icon-512.png`, `public/apple-touch-icon.png` — salvadanaio app mark (PWA / Home Screen)
+- `npm run icons` — regenerate PNG icons from `scripts/generate-icons.mjs`

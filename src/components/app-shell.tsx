@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { Home, List, PiggyBank, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AccountMenu } from "@/components/account-menu";
+import { BrandMark } from "@/components/brand-mark";
 import { useStore } from "@/lib/store";
 
 const NAV = [
@@ -27,11 +28,14 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-dvh bg-background">
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-foreground/6 bg-card/80 px-4 py-8 backdrop-blur-xl md:flex">
-        <div className="px-3">
-          <p className="text-xs font-medium tracking-[0.18em] text-muted-foreground uppercase">
-            ExpnsTracker
-          </p>
-          <p className="mt-1 text-lg font-semibold tracking-tight">I tuoi soldi, chiari.</p>
+        <div className="flex items-center gap-3 px-3">
+          <BrandMark className="size-11" size={44} />
+          <div className="min-w-0">
+            <p className="text-xs font-medium tracking-[0.18em] text-muted-foreground uppercase">
+              ExpnsTracker
+            </p>
+            <p className="mt-0.5 text-lg font-semibold tracking-tight">I tuoi soldi, chiari.</p>
+          </div>
         </div>
         <nav className="mt-10 flex flex-col gap-1">
           {NAV.map((item) => {
@@ -65,7 +69,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <div className="flex min-h-dvh flex-col md:pl-60">
         <header className="sticky top-0 z-20 border-b border-foreground/6 bg-background/80 px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 backdrop-blur-xl md:hidden">
           <div className="grid grid-cols-[2.5rem_1fr_2.5rem] items-center">
-            <span />
+            <BrandMark className="size-8" size={32} />
             <p className="text-center text-[13px] font-semibold tracking-tight">ExpnsTracker</p>
             <details className="relative justify-self-end">
               <summary className="flex size-10 cursor-pointer list-none items-center justify-center rounded-full bg-muted text-xs font-semibold [&::-webkit-details-marker]:hidden">

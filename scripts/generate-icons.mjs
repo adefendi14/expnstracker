@@ -5,25 +5,56 @@ import sharp from "sharp";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
-const BACKGROUND = "#F4F3EF";
-const PIGGY = "#1A1A1A";
+const BG = "#F4F3EF";
+const PIG = "#E39E94";
+const PIG_DEEP = "#D48C84";
+const SNOUT = "#EBC4BA";
+const INNER = "#CE7F77";
+const FEATURE = "#C5756D";
+const SHADOW = "#E4DCD3";
 
-const lucidePiggy = `
-  <path d="M11 17h3v2a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1v-3a3.16 3.16 0 0 0 2-2h1a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1h-1a5 5 0 0 0-2-4V3a4 4 0 0 0-3.2 1.6l-.3.4H11a6 6 0 0 0-6 6v1a5 5 0 0 0 2 4v3a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1z"/>
-  <path d="M16 10h.01"/>
-  <path d="M2 8v1a2 2 0 0 0 2 2h1"/>
-`;
+/** Ceramic salvadanaio, side view, facing left. viewBox 0 0 512 512. */
+function piggyArtwork() {
+  return `
+    <ellipse cx="256" cy="392" rx="118" ry="12" fill="${SHADOW}"/>
+    <path d="M392 246a24 24 0 1 1 0 42" fill="none" stroke="${PIG}" stroke-width="18" stroke-linecap="round"/>
+    <rect x="150" y="318" width="40" height="68" rx="20" fill="${PIG_DEEP}"/>
+    <rect x="204" y="330" width="38" height="58" rx="19" fill="${PIG_DEEP}"/>
+    <rect x="266" y="318" width="40" height="68" rx="20" fill="${PIG}"/>
+    <rect x="322" y="330" width="38" height="58" rx="19" fill="${PIG}"/>
+    <ellipse cx="262" cy="250" rx="136" ry="114" fill="${PIG}"/>
+    <ellipse cx="198" cy="154" rx="24" ry="38" transform="rotate(-30 198 154)" fill="${INNER}"/>
+    <ellipse cx="170" cy="146" rx="28" ry="42" transform="rotate(-36 170 146)" fill="${PIG}"/>
+    <ellipse cx="168" cy="150" rx="11" ry="20" transform="rotate(-36 168 150)" fill="${SNOUT}"/>
+    <ellipse cx="126" cy="262" rx="38" ry="34" fill="${SNOUT}"/>
+    <ellipse cx="114" cy="262" rx="6.5" ry="8.5" fill="${FEATURE}"/>
+    <ellipse cx="136" cy="262" rx="6.5" ry="8.5" fill="${FEATURE}"/>
+    <ellipse cx="172" cy="222" rx="8" ry="10" fill="${FEATURE}"/>
+    <rect x="246" y="142" width="72" height="22" rx="11" fill="${FEATURE}"/>
+  `;
+}
 
-function iconSvg(size, paddingRatio = 0.18) {
-  const radius = Math.round(size * 0.22);
-  const pad = size * paddingRatio;
-  const scale = (size - pad * 2) / 24;
+function iconSvg(size) {
   return `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
-  <rect width="${size}" height="${size}" rx="${radius}" fill="${BACKGROUND}"/>
-  <g transform="translate(${pad} ${pad}) scale(${scale})" fill="none" stroke="${PIGGY}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    ${lucidePiggy}
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="${BG}"/>
+  ${piggyArtwork()}
+</svg>`;
+}
+
+function logoSvg() {
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="${BG}"/>
+  ${piggyArtwork()}
+</svg>`;
+}
+
+function faviconSvg() {
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="114" fill="${BG}"/>
+  ${piggyArtwork()}
 </svg>`;
 }
 
@@ -44,33 +75,26 @@ function pngToIco(png, width, height) {
   return Buffer.concat([header, entry, png]);
 }
 
-async function writePng(file, size, paddingRatio) {
-  const buf = await sharp(Buffer.from(iconSvg(size, paddingRatio)))
+async function writePng(file, size) {
+  const buf = await sharp(Buffer.from(iconSvg(size)))
     .resize(size, size)
-    .png()
+    .png({ compressionLevel: 9 })
     .toBuffer();
   mkdirSync(dirname(file), { recursive: true });
   writeFileSync(file, buf);
   return buf;
 }
 
-const faviconSvg = `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="${PIGGY}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <rect width="24" height="24" rx="5.2" fill="${BACKGROUND}" stroke="none"/>
-  <g transform="translate(2.2 2.2) scale(0.816)">
-    ${lucidePiggy}
-  </g>
-</svg>
-`;
+writeFileSync(join(root, "public/logo.svg"), logoSvg());
+writeFileSync(join(root, "public/favicon.svg"), faviconSvg());
 
 await writePng(join(root, "public/icon-192.png"), 192);
 await writePng(join(root, "public/icon-512.png"), 512);
 await writePng(join(root, "public/apple-touch-icon.png"), 180);
 await writePng(join(root, "src/app/icon.png"), 192);
 await writePng(join(root, "src/app/apple-icon.png"), 180);
-writeFileSync(join(root, "public/favicon.svg"), faviconSvg);
 
-const faviconPng = await writePng(join(root, "public/favicon-32.png"), 32, 0.12);
+const faviconPng = await writePng(join(root, "public/favicon-32.png"), 32);
 writeFileSync(join(root, "src/app/favicon.ico"), pngToIco(faviconPng, 32, 32));
 
 console.log("Icons written");

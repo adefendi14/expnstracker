@@ -2,6 +2,7 @@
 
 import { useRef, useState, useEffect, type FormEvent } from "react";
 import { toast } from "sonner";
+import { BrandMark } from "@/components/brand-mark";
 import { Field } from "@/components/field";
 import { SegmentedControl } from "@/components/segmented-control";
 import { Input } from "@/components/ui/input";
@@ -61,7 +62,8 @@ export function AuthScreen() {
 
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center px-5 py-10">
-      <p className="text-xs font-medium tracking-[0.18em] text-muted-foreground uppercase">
+      <BrandMark className="size-16" size={64} />
+      <p className="mt-5 text-xs font-medium tracking-[0.18em] text-muted-foreground uppercase">
         ExpnsTracker
       </p>
       <h1 className="mt-2 text-3xl font-semibold tracking-tight">
