@@ -10,15 +10,12 @@ export function PwaRegister() {
     if (process.env.NODE_ENV === "development") return;
     if (!("serviceWorker" in navigator)) return;
 
-    const register = () => {
-      void navigator.serviceWorker.register(withBase("/sw.js"), { updateViaCache: "none" });
-    };
-
-    if (document.readyState === "complete") {
-      register();
-    } else {
-      window.addEventListener("load", register, { once: true });
-    }
+    const script = withBase("/sw.js");
+    const scope = withBase("/");
+    void navigator.serviceWorker.register(script, {
+      scope,
+      updateViaCache: "none",
+    });
   }, []);
   return null;
 }

@@ -64,11 +64,15 @@ Use Safari (Chrome on iOS cannot install a standalone PWA).
 
 On a Mac or Windows desktop, Chrome or Edge can also install it from the address bar (Install app / Installa app).
 
-## Offline
+## Come aprire l’app offline (iPhone)
 
-The first visit still needs a network: the service worker downloads the app shell (HTML, JS, CSS, fonts, icons, SQLite wasm). After that, opening from Home / Installa or reloading the same origin works without a connection. Accounts and movements stay in the local SQLite file.
+La prima visita serve internet. Poi Home / Aggiungi a Home apre Riepilogo anche in modalità Aereo.
 
-If a URL was never cached, you get a short Italian page (**Sei offline**) with a link back to Riepilogo. There is no server at runtime: GitHub Pages only hosts static files.
+1. Apri ExpnsTracker **con rete** (Safari o l’icona Home) e aspetta che compaia il riepilogo o l’accesso. Lascia la pagina aperta qualche secondo, così l’app si salva sul telefono.
+2. Metti il telefono in **modalità Aereo**.
+3. Chiudi Safari/l’app e riapri **ExpnsTracker dalla Home**. Deve aprirsi Riepilogo (o Accedi), non la pagina di errore di Safari.
+
+`next dev` non registra il service worker. Per la stessa build di GitHub Pages: `GITHUB_PAGES=true GITHUB_REPOSITORY=adefendi14/expnstracker npm run build` poi `npm start`.
 
 ## What you can do
 
