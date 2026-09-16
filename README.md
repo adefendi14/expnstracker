@@ -17,6 +17,8 @@ npm run dev
 
 The app listens on [http://127.0.0.1:4317](http://127.0.0.1:4317). Create an account on first open. Each account only sees its own movements.
 
+`next dev` does not register the service worker (so hot reload stays intact). Use `npm run build` and `npm start` to try the installed/offline PWA.
+
 Production (static export, same as GitHub Pages):
 
 ```bash
@@ -62,6 +64,12 @@ Use Safari (Chrome on iOS cannot install a standalone PWA).
 
 On a Mac or Windows desktop, Chrome or Edge can also install it from the address bar (Install app / Installa app).
 
+## Offline
+
+The first visit still needs a network: the service worker downloads the app shell (HTML, JS, CSS, fonts, icons, SQLite wasm). After that, opening from Home / Installa or reloading the same origin works without a connection. Accounts and movements stay in the local SQLite file.
+
+If a URL was never cached, you get a short Italian page (**Sei offline**) with a link back to Riepilogo. There is no server at runtime: GitHub Pages only hosts static files.
+
 ## What you can do
 
 - **Account**: create users, log in, log out. Passwords are hashed with PBKDF2 on the device.
@@ -80,4 +88,5 @@ On a Mac or Windows desktop, Chrome or Edge can also install it from the address
 - `.github/workflows/deploy.yml` — static export to the `gh-pages` branch (same pattern as arteco-srl)
 - `public/sql-wasm.wasm` — SQLite engine
 - `public/logo.svg`, `public/icon-192.png`, `public/icon-512.png`, `public/apple-touch-icon.png` — salvadanaio app mark (PWA / Home Screen)
-- `npm run icons` — regenerate PNG icons from `scripts/generate-icons.mjs`
+- `scripts/generate-sw.mjs` — writes `out/sw.js` with a precache of the static export
+- `public/offline.html` — Italian fallback if a page is not in the cache

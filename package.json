@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --port 4317 --hostname 0.0.0.0",
-    "build": "next build",
+    "build": "next build && node scripts/generate-sw.mjs",
     "start": "npx --yes serve@14 out -l 4317 --no-clipboard",
     "lint": "eslint",
     "icons": "node scripts/generate-icons.mjs",
