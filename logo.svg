@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="114" fill="#F4F3EF"/>
+  <rect width="512" height="512" fill="#F4F3EF"/>
   
     <ellipse cx="256" cy="392" rx="118" ry="12" fill="#E4DCD3"/>
     <path d="M392 246a24 24 0 1 1 0 42" fill="none" stroke="#E39E94" stroke-width="18" stroke-linecap="round"/>

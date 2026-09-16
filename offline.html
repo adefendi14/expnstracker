@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="it">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#F4F3EF" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="ExpnsTracker" />
+    <title>ExpnsTracker</title>
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <style>
+      :root {
+        color-scheme: light;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100dvh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+        background: #f4f3ef;
+        color: #1c1c1e;
+      }
+      main {
+        width: min(26rem, 100%);
+        padding: 2.5rem 1.5rem;
+        border-radius: 1.75rem;
+        background: #fff;
+        box-shadow: 0 0 0 1px rgba(28, 28, 30, 0.08);
+        text-align: center;
+      }
+      img {
+        width: 64px;
+        height: 64px;
+        border-radius: 22%;
+      }
+      p.kicker {
+        margin: 1rem 0 0;
+        font-size: 0.75rem;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: #6e6e73;
+        font-weight: 500;
+      }
+      h1 {
+        margin: 0.5rem 0 0;
+        font-size: 1.35rem;
+        letter-spacing: -0.03em;
+        font-weight: 600;
+      }
+      p.copy {
+        margin: 0.75rem 0 0;
+        font-size: 0.9rem;
+        line-height: 1.55;
+        color: #6e6e73;
+      }
+      a {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-top: 1.5rem;
+        height: 3rem;
+        padding: 0 1.5rem;
+        border-radius: 1rem;
+        background: #1c1c1e;
+        color: #f7f6f3;
+        text-decoration: none;
+        font-size: 0.9rem;
+        font-weight: 500;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <img src="./icon-192.png" width="64" height="64" alt="" />
+      <p class="kicker">ExpnsTracker</p>
+      <h1>Sei offline</h1>
+      <p class="copy">
+        Questa schermata non è in memoria. Dopo la prima apertura l’app e i tuoi dati restano sul
+        dispositivo: torna al riepilogo, oppure riprova quando hai rete.
+      </p>
+      <a href="./">Vai al riepilogo</a>
+    </main>
+  </body>
+</html>
