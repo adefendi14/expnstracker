@@ -1,5 +1,5 @@
-/* ExpnsTracker app-shell cache. Generated: 718a4772fe74 */
-const CACHE_NAME = "expnstracker-shell-718a4772fe74";
+/* ExpnsTracker app-shell cache. Generated: 6fe6a8215d1c */
+const CACHE_NAME = "expnstracker-shell-6fe6a8215d1c";
 const OFFLINE_URL = "./offline.html";
 const PRECACHE = [
   "./",
@@ -9,18 +9,18 @@ const PRECACHE = [
   "./__next.__PAGE__.txt",
   "./__next._full.txt",
   "./__next._tree.txt",
-  "./_next/static/K_wa0xZ890bDLKQHk7ZKb/_buildManifest.js",
-  "./_next/static/K_wa0xZ890bDLKQHk7ZKb/_clientMiddlewareManifest.js",
-  "./_next/static/K_wa0xZ890bDLKQHk7ZKb/_ssgManifest.js",
+  "./_next/static/_pjaTG_-FGYc_WMc4IKTZ/_buildManifest.js",
+  "./_next/static/_pjaTG_-FGYc_WMc4IKTZ/_clientMiddlewareManifest.js",
+  "./_next/static/_pjaTG_-FGYc_WMc4IKTZ/_ssgManifest.js",
   "./_next/static/chunks/011ku-y_mf3r9.js",
-  "./_next/static/chunks/07o_g_-lgdess.js",
   "./_next/static/chunks/0cz1d0mv5g_q7.js",
   "./_next/static/chunks/0dauets79x7zw.js",
-  "./_next/static/chunks/0lskx0th515rx.js",
   "./_next/static/chunks/0yrn-4294x9cd.js",
+  "./_next/static/chunks/1gl39ey69uypc.js",
   "./_next/static/chunks/1npnvr8pzs7k-.css",
   "./_next/static/chunks/1u8_lge44khzh.js",
   "./_next/static/chunks/28w9dcstardro.js",
+  "./_next/static/chunks/2cwbulpb7rmbs.js",
   "./_next/static/chunks/2d-1hfkv2hgbw.js",
   "./_next/static/chunks/2i51e627rllld.js",
   "./_next/static/chunks/2n4_yuge5nzdu.js",
