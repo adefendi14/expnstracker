@@ -23,6 +23,7 @@ export type LedgerEntry = {
   id: string;
   direction: DebtDirection;
   person: string;
+  personId?: string;
   amount: number;
   paid: number;
   dueDate?: string;
@@ -38,8 +39,37 @@ export type Expense = {
   category: ExpenseCategory;
   date: string;
   notes?: string;
+  personId?: string;
   createdAt: string;
   updatedAt: string;
+};
+
+export type PersonProfile = {
+  id: string;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type PersonEventKind =
+  | "debito"
+  | "credito"
+  | "versamento"
+  | "storno"
+  | "spesa"
+  | "obiettivo";
+
+export type PersonEvent = {
+  id: string;
+  personId: string;
+  kind: PersonEventKind;
+  direction?: DebtDirection;
+  amount: number;
+  ledgerId?: string;
+  expenseId?: string;
+  notes?: string;
+  occurredAt: string;
+  createdAt: string;
 };
 
 export type InvestmentIdea = {
@@ -79,6 +109,8 @@ export type AppData = {
   expenses: Expense[];
   ideas: InvestmentIdea[];
   piggyBanks: PiggyBank[];
+  people: PersonProfile[];
+  events: PersonEvent[];
 };
 
 export type ListKind = "tutti" | "debiti" | "crediti" | "spese" | "idee";
@@ -93,4 +125,6 @@ export const emptyData = (): AppData => ({
   expenses: [],
   ideas: [],
   piggyBanks: [],
+  people: [],
+  events: [],
 });

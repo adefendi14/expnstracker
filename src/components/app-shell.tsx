@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, List, PiggyBank, Plus } from "lucide-react";
+import { Home, List, PiggyBank, Plus, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AccountMenu } from "@/components/account-menu";
 import { BrandMark } from "@/components/brand-mark";
@@ -12,6 +12,7 @@ import { useStore } from "@/lib/store";
 const NAV = [
   { href: "/", label: "Riepilogo", icon: Home },
   { href: "/elenco", label: "Elenco", icon: List },
+  { href: "/persone", label: "Persone", icon: Users },
   { href: "/salvadanai", label: "Salvadanai", icon: PiggyBank },
   { href: "/aggiungi", label: "Aggiungi", icon: Plus },
 ] as const;
@@ -87,7 +88,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </div>
 
       <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-foreground/6 bg-card/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden">
-        <ul className="mx-auto grid max-w-lg grid-cols-4 px-2 pt-1">
+        <ul className="mx-auto grid max-w-lg grid-cols-5 px-1 pt-1">
           {NAV.map((item) => {
             const active = isActive(pathname, item.href);
             const Icon = item.icon;

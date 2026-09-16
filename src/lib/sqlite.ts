@@ -1,5 +1,6 @@
 import type { Database, SqlJsStatic, SqlValue } from "sql.js";
 import { withBase } from "@/lib/paths";
+import { applyPeopleSchema } from "@/lib/schema-people";
 
 export const DB_FILE_NAME = "expnstracker.sqlite";
 const IDB_NAME = "expnstracker";
@@ -121,6 +122,7 @@ function applySchema(db: Database) {
   if (!ledgerColumns.has("paid")) {
     db.run("ALTER TABLE ledger ADD COLUMN paid REAL NOT NULL DEFAULT 0");
   }
+  applyPeopleSchema(db);
 }
 
 export function getDb() {

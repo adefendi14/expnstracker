@@ -82,8 +82,8 @@ type StoreContextValue = {
   deleteLedger: (id: string) => void;
   adjustLedgerPaid: (id: string, delta: number) => void;
   adjustLedgerTarget: (id: string, delta: number) => void;
-  addExpense: (entry: Omit<Expense, "id" | "createdAt" | "updatedAt">) => Expense;
-  updateExpense: (id: string, patch: Partial<Expense>) => void;
+  addExpense: (entry: Omit<Expense, "id" | "createdAt" | "updatedAt" | "personId"> & { person?: string }) => Expense;
+  updateExpense: (id: string, patch: Partial<Expense> & { person?: string | null }) => void;
   deleteExpense: (id: string) => void;
   addIdea: (entry: Omit<InvestmentIdea, "id" | "createdAt" | "updatedAt">) => InvestmentIdea;
   updateIdea: (id: string, patch: Partial<InvestmentIdea>) => void;
@@ -148,6 +148,8 @@ function parseLegacy(raw: string | null): AppData | null {
     expenses: Array.isArray(candidate.expenses) ? candidate.expenses : [],
     ideas: Array.isArray(candidate.ideas) ? candidate.ideas : [],
     piggyBanks: Array.isArray(candidate.piggyBanks) ? candidate.piggyBanks : [],
+    people: [],
+    events: [],
   };
 }
 
@@ -401,7 +403,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         if (patch.settled === true && patch.paid === undefined) {
           next.paid = next.amount;
         }
-        updateLedgerRow(userId, id, next);
+        updateLedgerRow(userId, id, next, currentItem);
       });
     },
     [commitUser]
@@ -428,7 +430,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           paid,
           settled: paid >= currentItem.amount,
           updatedAt: nowIso(),
-        });
+        }, currentItem);
       });
     },
     [commitUser]
@@ -450,7 +452,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           paid,
           settled: paid >= amount,
           updatedAt: nowIso(),
-        });
+        }, currentItem);
       });
     },
     [commitUser]
@@ -459,8 +461,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const addExpense: StoreContextValue["addExpense"] = useCallback(
     (entry) => {
       const stamp = nowIso();
-      const created: Expense = { ...entry, id: createId(), createdAt: stamp, updatedAt: stamp };
-      commitUser((userId) => insertExpense(userId, created));
+      const { person, ...rest } = entry;
+      const created: Expense = { ...rest, id: createId(), createdAt: stamp, updatedAt: stamp };
+      commitUser((userId) => insertExpense(userId, created, person));
       return created;
     },
     [commitUser]
@@ -471,7 +474,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       commitUser((userId, data) => {
         const currentItem = data.expenses.find((item) => item.id === id);
         if (!currentItem) return;
-        updateExpenseRow(userId, id, { ...currentItem, ...patch, updatedAt: nowIso() });
+        const { person, ...rest } = patch;
+        const next: Expense = { ...currentItem, ...rest, updatedAt: nowIso() };
+        updateExpenseRow(userId, id, next, person === null ? "" : person);
       });
     },
     [commitUser]

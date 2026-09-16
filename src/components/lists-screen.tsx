@@ -168,6 +168,14 @@ function LedgerAdjustDialog({
             />
           </Field>
           <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 text-sm">
+            {live.personId ? (
+              <Link
+                href={`/persone/scheda?id=${encodeURIComponent(live.personId)}`}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                Scheda di {live.person}
+              </Link>
+            ) : null}
             <button type="button" className="text-muted-foreground hover:text-foreground" onClick={onEdit}>
               Modifica
             </button>
@@ -248,7 +256,8 @@ export function ListsScreen({
         return `${row.item.person} ${row.item.notes ?? ""}`.toLowerCase().includes(hay);
       }
       if (row.kind === "expense") {
-        return `${CATEGORY_LABELS[row.item.category]} ${row.item.notes ?? ""}`.toLowerCase().includes(hay);
+        const personName = store.data.people.find((person) => person.id === row.item.personId)?.name ?? "";
+        return `${CATEGORY_LABELS[row.item.category]} ${row.item.notes ?? ""} ${personName}`.toLowerCase().includes(hay);
       }
       return `${row.item.title} ${row.item.notes ?? ""} ${row.item.link ?? ""}`.toLowerCase().includes(hay);
     });
@@ -338,7 +347,7 @@ export function ListsScreen({
                 }}
                 className="flex w-full items-center gap-3 rounded-2xl bg-card px-4 py-3.5 text-left ring-1 ring-foreground/8"
               >
-                <RowPreview row={row} />
+                <RowPreview row={row} people={store.data.people} />
               </button>
             </li>
           ))}
@@ -477,7 +486,7 @@ export function ListsScreen({
   );
 }
 
-function RowPreview({ row }: { row: Row }) {
+function RowPreview({ row, people }: { row: Row; people: { id: string; name: string }[] }) {
   if (row.kind === "ledger") {
     return (
       <>
@@ -499,6 +508,7 @@ function RowPreview({ row }: { row: Row }) {
   }
 
   if (row.kind === "expense") {
+    const personName = people.find((person) => person.id === row.item.personId)?.name;
     return (
       <>
         <div className="min-w-0 flex-1">
@@ -508,6 +518,7 @@ function RowPreview({ row }: { row: Row }) {
               {CATEGORY_LABELS[row.item.category]}
             </Badge>
             {formatShortDate(row.item.date)}
+            {personName ? ` · ${personName}` : ""}
           </p>
         </div>
         <p className="text-sm font-medium">{formatEuro(row.item.amount)}</p>

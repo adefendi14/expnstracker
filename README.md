@@ -80,8 +80,9 @@ La prima visita serve internet. Poi Home / Aggiungi a Home apre Riepilogo anche 
 
 - **Account**: create users, log in, log out. Passwords are hashed with PBKDF2 on the device.
 - **File SQLite**: export / import `expnstracker.sqlite` to move the whole database (all accounts) between browsers. On iPhone, Files used to grey out `.sqlite` because it is not a known type; import now accepts any file and checks the SQLite header.
-- **Riepilogo**: estimated balance (open credits − open debts only). Piggy banks are separate goal trackers.
-- **Aggiungi**: one form with tabs for Debito/Credito, Spesa, and Idea di investimento.
+- **Riepilogo**: estimated balance (open credits − open debts only). Piggy banks are separate goal trackers. Rankings show the top 3 people who owe you and the top 3 you owe.
+- **Persone**: every Chi name becomes a profile. Open a person for totals, monthly charts, and the history of debiti, crediti, versamenti, and linked expenses.
+- **Aggiungi**: one form with tabs for Debito/Credito, Spesa, and Idea di investimento. Chi is a profile picker (existing names plus a new one).
 - **Salvadanai**: create euro targets, add or withdraw funds, see `450€ / 1000€ — 45%`.
 - **Elenco**: browse, search, filter, edit, settle debts, complete ideas, delete items.
 
@@ -91,6 +92,7 @@ La prima visita serve internet. Poi Home / Aggiungi a Home apre Riepilogo anche 
 - `src/components` — shell, dashboard, forms, lists, login
 - `src/lib/sqlite.ts` — SQLite file (sql.js) persisted in IndexedDB
 - `src/lib/store.tsx` — accounts and per-user queries
+- `src/lib/people.ts` — profile identity, rankings, and person report series
 - `.github/workflows/deploy.yml` — static export to the `gh-pages` branch (same pattern as arteco-srl)
 - `public/sql-wasm.wasm` — SQLite engine
 - `public/logo.svg`, `public/icon-192.png`, `public/icon-512.png`, `public/apple-touch-icon.png` — salvadanaio app mark (PWA / Home Screen)

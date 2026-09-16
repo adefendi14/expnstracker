@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Field, FieldRow, NativeSelect } from "@/components/field";
+import { PersonPicker } from "@/components/person-picker";
 import { SegmentedControl } from "@/components/segmented-control";
 import { useStore } from "@/lib/store";
 import {
@@ -75,6 +76,9 @@ export function QuickAddForm({
   const [category, setCategory] = useState<ExpenseCategory>(expense?.category ?? "casa");
   const [expenseDate, setExpenseDate] = useState(expense?.date ?? todayIso());
   const [expenseNotes, setExpenseNotes] = useState(expense?.notes ?? "");
+  const [expensePerson, setExpensePerson] = useState(
+    expense?.personId ? (store.data.people.find((item) => item.id === expense.personId)?.name ?? "") : ""
+  );
 
   const [title, setTitle] = useState(idea?.title ?? "");
   const [ideaAmount, setIdeaAmount] = useState(idea ? String(idea.amount).replace(".", ",") : "");
@@ -131,6 +135,7 @@ export function QuickAddForm({
         category,
         date: expenseDate,
         notes: expenseNotes.trim() || undefined,
+        person: expensePerson.trim() || undefined,
       };
       if (expense) {
         store.updateExpense(expense.id, payload);
@@ -213,15 +218,13 @@ export function QuickAddForm({
               <option value="credito">Credito (mi devono)</option>
             </NativeSelect>
           </Field>
-          <Field label="Chi" htmlFor="person" error={errors.person}>
-            <Input
+          <Field label="Chi" htmlFor="person" error={errors.person} hint="Scegli un profilo o scrivi un nome nuovo.">
+            <PersonPicker
               id="person"
-              name="person"
               value={person}
-              onChange={(event) => setPerson(event.target.value)}
+              onChange={setPerson}
+              people={store.data.people}
               placeholder="Marco, inquilino, banca…"
-              className={inputClass}
-              autoComplete="off"
             />
           </Field>
           <FieldRow>
@@ -306,6 +309,16 @@ export function QuickAddForm({
               onChange={(event) => setExpenseNotes(event.target.value)}
               placeholder="Spesa al supermercato, cena, bolletta…"
               className="min-h-24 rounded-2xl px-3.5"
+            />
+          </Field>
+          <Field label="Chi" htmlFor="expense-person" hint="Facoltativo. Collega la spesa a un profilo.">
+            <PersonPicker
+              id="expense-person"
+              value={expensePerson}
+              onChange={setExpensePerson}
+              people={store.data.people}
+              placeholder="Opzionale"
+              optional
             />
           </Field>
         </div>

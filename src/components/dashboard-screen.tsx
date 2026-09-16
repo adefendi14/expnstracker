@@ -5,6 +5,7 @@ import { ArrowDownLeft, ArrowUpRight, Plus, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/empty-state";
 import { InstallHomeButton } from "@/components/install-home-button";
+import { RankingRow } from "@/components/people-screen";
 import { DashboardPiggySection } from "@/components/piggy-banks";
 import { useStore } from "@/lib/store";
 import {
@@ -15,9 +16,13 @@ import {
   formatShortDate,
   ledgerRemaining,
 } from "@/lib/format";
+import { personRankings, summarizePeople } from "@/lib/people";
 
 export function DashboardScreen() {
   const { data, totals } = useStore();
+  const summaries = summarizePeople(data);
+  const rankings = personRankings(summaries);
+  const hasPeople = summaries.length > 0;
   const hasAnything =
     data.ledger.length + data.expenses.length + data.ideas.length + data.piggyBanks.length > 0;
 
@@ -89,6 +94,77 @@ export function DashboardScreen() {
           <p className="mt-3 text-xs text-muted-foreground">Crediti aperti</p>
           <p className="mt-1 text-lg font-semibold tracking-tight">{formatEuro(totals.openCredits)}</p>
         </article>
+      </div>
+
+      <div className="px-4 md:px-8">
+        <section className="rounded-[1.75rem] bg-card p-5 ring-1 ring-foreground/8">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-medium">Persone</h2>
+              <p className="mt-0.5 text-xs text-muted-foreground">Debiti e crediti sommati per profilo.</p>
+            </div>
+            <Link
+              href="/persone"
+              className="inline-flex h-9 shrink-0 items-center rounded-full bg-muted px-3 text-xs font-medium"
+            >
+              Tutte
+            </Link>
+          </div>
+          {!hasPeople ? (
+            <p className="text-sm leading-6 text-muted-foreground">
+              Quando indichi un nome in Chi, diventa un profilo. Qui vedrai chi ti deve di più e a chi devi di più.
+            </p>
+          ) : rankings.topCredits.length === 0 && rankings.topDebts.length === 0 ? (
+            <p className="text-sm leading-6 text-muted-foreground">
+              Nessun debito o credito aperto. I profili restano in{" "}
+              <Link href="/persone" className="font-medium text-foreground underline underline-offset-4">
+                Tutte le persone
+              </Link>
+              .
+            </p>
+          ) : (
+            <div className="grid gap-5 sm:grid-cols-2">
+              <div>
+                <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">Ti devono di più</p>
+                {rankings.topCredits.length === 0 ? (
+                  <p className="mt-2 text-sm text-muted-foreground">Nessun credito aperto.</p>
+                ) : (
+                  <ul className="mt-1">
+                    {rankings.topCredits.map((item) => (
+                      <li key={item.person.id}>
+                        <RankingRow
+                          href={`/persone/scheda?id=${encodeURIComponent(item.person.id)}`}
+                          name={item.person.name}
+                          amount={item.openCredits}
+                          tone="credit"
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <div>
+                <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">Devi di più</p>
+                {rankings.topDebts.length === 0 ? (
+                  <p className="mt-2 text-sm text-muted-foreground">Nessun debito aperto.</p>
+                ) : (
+                  <ul className="mt-1">
+                    {rankings.topDebts.map((item) => (
+                      <li key={item.person.id}>
+                        <RankingRow
+                          href={`/persone/scheda?id=${encodeURIComponent(item.person.id)}`}
+                          name={item.person.name}
+                          amount={item.openDebts}
+                          tone="debt"
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          )}
+        </section>
       </div>
 
       <div className="px-4 md:px-8">

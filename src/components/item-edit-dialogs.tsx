@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Field, FieldRow, NativeSelect } from "@/components/field";
+import { PersonPicker } from "@/components/person-picker";
 import { useStore } from "@/lib/store";
 import { CATEGORY_LABELS, PRIORITY_LABELS, RISK_LABELS, ledgerPaid, parseEuroInput } from "@/lib/format";
 import {
@@ -55,15 +56,16 @@ export function LedgerEditDialog({
   const store = useStore();
   const live = store.data.ledger.find((entry) => entry.id === item.id) ?? item;
   const [direction, setDirection] = useState<DebtDirection>(live.direction);
+  const [person, setPerson] = useState(live.person);
   const [error, setError] = useState("");
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
-    const person = String(data.get("person") ?? "").trim();
+    const nextPerson = person.trim();
     const dueDate = String(data.get("dueDate") ?? "").trim();
     const notes = String(data.get("notes") ?? "").trim();
-    if (!person) {
+    if (!nextPerson) {
       setError("Indica chi è coinvolto.");
       return;
     }
@@ -75,7 +77,7 @@ export function LedgerEditDialog({
     const paid = Math.min(ledgerPaid(live), amount);
     store.updateLedger(live.id, {
       direction,
-      person,
+      person: nextPerson,
       amount,
       paid,
       dueDate: dueDate || undefined,
@@ -95,6 +97,7 @@ export function LedgerEditDialog({
         if (!next) {
           setError("");
           setDirection(live.direction);
+          setPerson(live.person);
         }
       }}
     >
@@ -123,7 +126,7 @@ export function LedgerEditDialog({
             </Button>
           </div>
           <Field label="Chi" error={error === "Indica chi è coinvolto." ? error : undefined}>
-            <Input name="person" defaultValue={live.person} className={inputClass} autoComplete="off" />
+            <PersonPicker value={person} onChange={setPerson} people={store.data.people} />
           </Field>
           <FieldRow>
             <Field label="Obiettivo" error={error === "Inserisci un obiettivo in euro." ? error : undefined}>
@@ -161,6 +164,9 @@ export function ExpenseEditDialog({
   const store = useStore();
   const live = store.data.expenses.find((entry) => entry.id === item.id) ?? item;
   const [error, setError] = useState("");
+  const [person, setPerson] = useState(
+    live.personId ? (store.data.people.find((entry) => entry.id === live.personId)?.name ?? "") : ""
+  );
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -182,6 +188,7 @@ export function ExpenseEditDialog({
       date,
       category,
       notes: notes || undefined,
+      person: person.trim() ? person.trim() : null,
     });
     toast.success("Spesa aggiornata");
     setError("");
@@ -227,6 +234,9 @@ export function ExpenseEditDialog({
           </FieldRow>
           <Field label="Note" hint="Facoltative">
             <Textarea name="notes" defaultValue={live.notes ?? ""} className="min-h-20 rounded-2xl" />
+          </Field>
+          <Field label="Chi" hint="Facoltativo">
+            <PersonPicker value={person} onChange={setPerson} people={store.data.people} optional />
           </Field>
           <DialogFooter>{saveButton()}</DialogFooter>
         </form>
