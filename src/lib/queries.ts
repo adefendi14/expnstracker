@@ -1,3 +1,4 @@
+import { createId } from "@/lib/id";
 import type {
   AmountKind,
   AppData,
@@ -96,10 +97,6 @@ type EventRow = {
   created_at: string;
 };
 
-function newId() {
-  return crypto.randomUUID();
-}
-
 function asPerson(row: PersonRow): PersonProfile {
   return {
     id: row.id,
@@ -136,7 +133,7 @@ export function ensurePerson(userId: string, rawName: string): PersonProfile {
   );
   if (existing) return asPerson(existing);
   const stamp = new Date().toISOString();
-  const person: PersonProfile = { id: newId(), name, createdAt: stamp, updatedAt: stamp };
+  const person: PersonProfile = { id: createId(), name, createdAt: stamp, updatedAt: stamp };
   runSql(
     "INSERT INTO people (id, user_id, name, name_key, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
     [person.id, userId, person.name, key, person.createdAt, person.updatedAt]
@@ -151,7 +148,7 @@ function insertPersonEvent(userId: string, event: Omit<PersonEvent, "id" | "crea
       (id, user_id, person_id, kind, direction, amount, ledger_id, expense_id, notes, occurred_at, created_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
-      event.id ?? newId(),
+      event.id ?? createId(),
       userId,
       event.personId,
       event.kind,

@@ -21,6 +21,7 @@ import {
 } from "@/lib/types";
 import { isThisMonth, ledgerPaid, ledgerRemaining } from "@/lib/format";
 import { EXPORT_DATABASE_MIME } from "@/lib/import-file";
+import { createId } from "@/lib/id";
 import { assertPassword, hashPassword, verifyPassword } from "@/lib/password";
 import {
   countUsers,
@@ -130,10 +131,6 @@ function setSnapshot(next: Snapshot) {
 
 function nowIso() {
   return new Date().toISOString();
-}
-
-function createId() {
-  return crypto.randomUUID();
 }
 
 function parseLegacy(raw: string | null): AppData | null {
