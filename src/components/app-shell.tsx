@@ -28,7 +28,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-dvh bg-background">
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-foreground/6 bg-card/80 px-4 py-8 backdrop-blur-xl md:flex">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-[color:var(--glass-border)] bg-[color:var(--glass)] px-4 py-8 backdrop-blur-xl md:flex">
         <div className="px-3">
           <div className="flex items-center gap-2.5">
             <BrandMark className="size-9" size={36} />
@@ -49,7 +49,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 className={cn(
                   "flex h-12 items-center gap-3 rounded-2xl px-3 text-sm font-medium transition-colors",
                   active
-                    ? "bg-foreground text-background"
+                    ? "bg-brand-soft text-brand-strong"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground"
                 )}
               >
@@ -68,7 +68,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </aside>
 
       <div className="flex min-h-dvh flex-col md:pl-60">
-        <header className="sticky top-0 z-20 border-b border-foreground/6 bg-background/80 px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 backdrop-blur-xl md:hidden">
+        <header className="sticky top-0 z-20 border-b border-[color:var(--glass-border)] bg-[color:var(--glass)] px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 backdrop-blur-xl md:hidden">
           <div className="grid grid-cols-[2.5rem_1fr_2.5rem] items-center">
             <BrandMark className="size-8" size={32} />
             <p className="text-center text-[13px] font-semibold tracking-tight">ExpnsTracker</p>
@@ -87,7 +87,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </main>
       </div>
 
-      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-foreground/6 bg-card/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-[color:var(--glass-border)] bg-[color:var(--glass)] pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden">
         <ul className="mx-auto grid max-w-lg grid-cols-5 px-1 pt-1">
           {NAV.map((item) => {
             const active = isActive(pathname, item.href);
@@ -98,13 +98,13 @@ export function AppShell({ children }: { children: ReactNode }) {
                   href={item.href}
                   className={cn(
                     "flex min-h-14 flex-col items-center justify-center gap-0.5 text-[11px] font-medium",
-                    active ? "text-foreground" : "text-muted-foreground"
+                    active ? "text-brand-strong" : "text-muted-foreground"
                   )}
                 >
                   <span
                     className={cn(
                       "flex size-8 items-center justify-center rounded-full",
-                      active && "bg-foreground text-background"
+                      active && "bg-brand-soft text-brand-strong"
                     )}
                   >
                     <Icon className="size-4" />

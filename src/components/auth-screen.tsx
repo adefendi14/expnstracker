@@ -65,7 +65,7 @@ export function AuthScreen() {
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center px-5 py-10">
       <BrandMark className="size-16" size={64} />
-      <p className="mt-5 text-xs font-medium tracking-[0.18em] text-muted-foreground uppercase">
+      <p className="mt-5 text-xs font-medium tracking-[0.18em] text-brand uppercase">
         ExpnsTracker
       </p>
       <h1 className="mt-2 text-3xl font-semibold tracking-tight">
@@ -146,7 +146,7 @@ export function AuthScreen() {
         <button
           type="submit"
           disabled={pending}
-          className="inline-flex h-12 items-center justify-center rounded-2xl bg-primary px-4 text-base font-medium text-primary-foreground disabled:opacity-50"
+          className="inline-flex h-12 items-center justify-center rounded-2xl bg-brand px-4 text-base font-medium text-white disabled:opacity-50"
         >
           {pending ? "Un attimo…" : mode === "registrati" ? "Crea account" : "Entra"}
         </button>
