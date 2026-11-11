@@ -6,6 +6,7 @@ import { BrandMark } from "@/components/brand-mark";
 import { Field } from "@/components/field";
 import { SegmentedControl } from "@/components/segmented-control";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/password-input";
 import { SqliteFileInput } from "@/components/sqlite-file-input";
 import { useStore } from "@/lib/store";
 
@@ -114,10 +115,9 @@ export function AuthScreen() {
           />
         </Field>
         <Field label="Password" htmlFor="password">
-          <Input
+          <PasswordInput
             id="password"
             name="password"
-            type="password"
             autoComplete={mode === "registrati" ? "new-password" : "current-password"}
             className={inputClass}
             value={password}
@@ -126,10 +126,9 @@ export function AuthScreen() {
         </Field>
         {mode === "registrati" ? (
           <Field label="Conferma password" htmlFor="confirm">
-            <Input
+            <PasswordInput
               id="confirm"
               name="confirm"
-              type="password"
               autoComplete="new-password"
               className={inputClass}
               value={confirm}

@@ -21,7 +21,7 @@ import {
 } from "@/lib/types";
 import { isThisMonth, ledgerPaid, ledgerRemaining } from "@/lib/format";
 import { EXPORT_DATABASE_MIME } from "@/lib/import-file";
-import { hashPassword, verifyPassword } from "@/lib/password";
+import { assertPassword, hashPassword, verifyPassword } from "@/lib/password";
 import {
   countUsers,
   deleteExpenseRow,
@@ -255,9 +255,7 @@ function validateCredentials(name: string, username: string, password: string) {
   if (!USERNAME_PATTERN.test(username)) {
     throw new Error("Username: 3–32 caratteri, lettere, numeri, punto o underscore.");
   }
-  if (password.length < 6) {
-    throw new Error("La password deve avere almeno 6 caratteri.");
-  }
+  assertPassword(password);
 }
 
 export function StoreProvider({ children }: { children: ReactNode }) {
