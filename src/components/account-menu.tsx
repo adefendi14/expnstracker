@@ -26,7 +26,7 @@ export function AccountMenu() {
     <div className="flex flex-col gap-2">
       <div>
         <p className="truncate text-sm font-medium">{user.name}</p>
-        <p className="truncate text-xs text-muted-foreground">@{user.username}</p>
+        <p className="truncate text-xs text-muted-foreground">{user.username}</p>
       </div>
       <SqliteFileInput inputRef={fileRef} onFile={(file) => void onImport(file)} />
       <button

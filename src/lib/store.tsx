@@ -106,7 +106,7 @@ type StoreContextValue = {
 };
 
 const StoreContext = createContext<StoreContextValue | null>(null);
-const USERNAME_PATTERN = /^[a-zA-Z0-9._]{3,32}$/;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const listeners = new Set<() => void>();
 let snapshot: Snapshot = {
@@ -245,15 +245,15 @@ const serverSnapshot: Snapshot = {
 };
 
 function normalizeUsername(value: string) {
-  return value.trim();
+  return value.trim().toLowerCase();
 }
 
 function validateCredentials(name: string, username: string, password: string) {
   if (name.trim().length < 2) {
     throw new Error("Inserisci il nome (almeno 2 caratteri).");
   }
-  if (!USERNAME_PATTERN.test(username)) {
-    throw new Error("Username: 3–32 caratteri, lettere, numeri, punto o underscore.");
+  if (!EMAIL_PATTERN.test(username)) {
+    throw new Error("Inserisci un indirizzo email valido.");
   }
   assertPassword(password);
 }
@@ -266,7 +266,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const handle = normalizeUsername(username);
     validateCredentials(displayName, handle, password);
     if (findUserAuth(handle)) {
-      throw new Error("Questo username è già usato.");
+      throw new Error("Questa email è già registrata.");
     }
     const stamp = nowIso();
     const secret = await hashPassword(password);
@@ -307,7 +307,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const handle = normalizeUsername(username);
     const row = findUserAuth(handle);
     if (!row || !(await verifyPassword(password, row.password_salt, row.password_hash))) {
-      throw new Error("Username o password non corretti.");
+      throw new Error("Email o password non corretti.");
     }
     const user = findUserById(row.id);
     if (!user) {

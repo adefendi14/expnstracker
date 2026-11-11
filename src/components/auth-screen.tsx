@@ -73,7 +73,7 @@ export function AuthScreen() {
       </h1>
       <p className="mt-2 text-sm leading-6 text-muted-foreground">
         {mode === "accedi"
-          ? "Entra con username e password di questo dispositivo. I dati restano nel file SQLite locale."
+          ? "Entra con email e password di questo dispositivo. I dati restano nel file SQLite locale."
           : "Ogni persona ha il suo spazio. Il database è un file SQLite su questo dispositivo: niente cloud."}
       </p>
 
@@ -103,15 +103,17 @@ export function AuthScreen() {
             />
           </Field>
         ) : null}
-        <Field label="Username" htmlFor="username">
+        <Field label="Email" htmlFor="username">
           <Input
             id="username"
             name="username"
-            autoComplete="username"
+            type="email"
+            inputMode="email"
+            autoComplete="email"
             className={inputClass}
             value={username}
             onChange={(event) => setUsername(event.target.value)}
-            placeholder="andrea"
+            placeholder="andrea@email.com"
           />
         </Field>
         <Field label="Password" htmlFor="password">
