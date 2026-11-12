@@ -1,12 +1,6 @@
+import { createId } from "@/lib/id";
 import type { Database } from "sql.js";
 import { normalizePersonKey, normalizePersonName } from "@/lib/people";
-
-function newId() {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return crypto.randomUUID();
-  }
-  return `p-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-}
 
 function columnNames(db: Database, table: string) {
   const info = db.exec(`PRAGMA table_info(${table})`);
@@ -87,7 +81,7 @@ function backfillPeople(db: Database) {
     const mapKey = `${row.userId}\0${key}`;
     let personId = existing.get(mapKey);
     if (!personId) {
-      personId = newId();
+      personId = createId();
       db.run(
         "INSERT INTO people (id, user_id, name, name_key, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
         [personId, row.userId, name, key, stamp, stamp]
@@ -114,7 +108,7 @@ function backfillEvents(db: Database) {
         (id, user_id, person_id, kind, direction, amount, ledger_id, expense_id, notes, occurred_at, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?)`,
       [
-        newId(),
+        createId(),
         String(userId),
         String(personId),
         String(direction),
@@ -133,7 +127,7 @@ function backfillEvents(db: Database) {
         `INSERT INTO person_events
           (id, user_id, person_id, kind, direction, amount, ledger_id, expense_id, notes, occurred_at, created_at)
          VALUES (?, ?, ?, 'versamento', ?, ?, ?, NULL, NULL, ?, ?)`,
-        [newId(), String(userId), String(personId), String(direction), paidAmount, String(id), paidAt, paidAt]
+        [createId(), String(userId), String(personId), String(direction), paidAmount, String(id), paidAt, paidAt]
       );
     }
   }

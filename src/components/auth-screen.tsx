@@ -6,6 +6,7 @@ import { BrandMark } from "@/components/brand-mark";
 import { Field } from "@/components/field";
 import { SegmentedControl } from "@/components/segmented-control";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/password-input";
 import { SqliteFileInput } from "@/components/sqlite-file-input";
 import { useStore } from "@/lib/store";
 
@@ -64,7 +65,7 @@ export function AuthScreen() {
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center px-5 py-10">
       <BrandMark className="size-16" size={64} />
-      <p className="mt-5 text-xs font-medium tracking-[0.18em] text-muted-foreground uppercase">
+      <p className="mt-5 text-xs font-medium tracking-[0.18em] text-brand uppercase">
         ExpnsTracker
       </p>
       <h1 className="mt-2 text-3xl font-semibold tracking-tight">
@@ -72,7 +73,7 @@ export function AuthScreen() {
       </h1>
       <p className="mt-2 text-sm leading-6 text-muted-foreground">
         {mode === "accedi"
-          ? "Entra con username e password di questo dispositivo. I dati restano nel file SQLite locale."
+          ? "Entra con email e password di questo dispositivo. I dati restano nel file SQLite locale."
           : "Ogni persona ha il suo spazio. Il database è un file SQLite su questo dispositivo: niente cloud."}
       </p>
 
@@ -102,22 +103,23 @@ export function AuthScreen() {
             />
           </Field>
         ) : null}
-        <Field label="Username" htmlFor="username">
+        <Field label="Email" htmlFor="username">
           <Input
             id="username"
             name="username"
-            autoComplete="username"
+            type="email"
+            inputMode="email"
+            autoComplete="email"
             className={inputClass}
             value={username}
             onChange={(event) => setUsername(event.target.value)}
-            placeholder="andrea"
+            placeholder="andrea@email.com"
           />
         </Field>
         <Field label="Password" htmlFor="password">
-          <Input
+          <PasswordInput
             id="password"
             name="password"
-            type="password"
             autoComplete={mode === "registrati" ? "new-password" : "current-password"}
             className={inputClass}
             value={password}
@@ -126,10 +128,9 @@ export function AuthScreen() {
         </Field>
         {mode === "registrati" ? (
           <Field label="Conferma password" htmlFor="confirm">
-            <Input
+            <PasswordInput
               id="confirm"
               name="confirm"
-              type="password"
               autoComplete="new-password"
               className={inputClass}
               value={confirm}
@@ -145,7 +146,7 @@ export function AuthScreen() {
         <button
           type="submit"
           disabled={pending}
-          className="inline-flex h-12 items-center justify-center rounded-2xl bg-primary px-4 text-base font-medium text-primary-foreground disabled:opacity-50"
+          className="inline-flex h-12 items-center justify-center rounded-2xl bg-brand px-4 text-base font-medium text-white disabled:opacity-50"
         >
           {pending ? "Un attimo…" : mode === "registrati" ? "Crea account" : "Entra"}
         </button>

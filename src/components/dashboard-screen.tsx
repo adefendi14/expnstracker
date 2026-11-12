@@ -70,7 +70,7 @@ export function DashboardScreen() {
 
       <div className="px-4 md:px-8">
         <section className="rounded-[1.75rem] bg-card p-6 ring-1 ring-foreground/8">
-          <p className="text-sm text-muted-foreground">Saldo stimato</p>
+          <p className="text-sm font-medium text-brand">Saldo stimato</p>
           <p className="mt-2 text-4xl font-semibold tracking-tight">{formatEuro(totals.estimatedBalance)}</p>
           <p className="mt-2 text-xs leading-5 text-muted-foreground">
             Solo crediti aperti {formatEuroCompact(totals.openCredits)} − debiti aperti{" "}
@@ -125,7 +125,7 @@ export function DashboardScreen() {
           ) : (
             <div className="grid gap-5 sm:grid-cols-2">
               <div>
-                <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">Ti devono di più</p>
+                <p className="text-xs font-medium tracking-wide text-brand uppercase">Ti devono di più</p>
                 {rankings.topCredits.length === 0 ? (
                   <p className="mt-2 text-sm text-muted-foreground">Nessun credito aperto.</p>
                 ) : (
@@ -144,7 +144,7 @@ export function DashboardScreen() {
                 )}
               </div>
               <div>
-                <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">Devi di più</p>
+                <p className="text-xs font-medium tracking-wide text-brand uppercase">Devi di più</p>
                 {rankings.topDebts.length === 0 ? (
                   <p className="mt-2 text-sm text-muted-foreground">Nessun debito aperto.</p>
                 ) : (
