@@ -11,7 +11,7 @@ SSH_KEY="${VPS_SSH_KEY:-$HOME/.ssh/id_ed25519}"
 
 find_tarball() {
   if [ -n "${TIP_TGZ:-}" ] && [ -f "$TIP_TGZ" ]; then
-    printf %sn "$TIP_TGZ"
+    printf '%s\n' "$TIP_TGZ"
     return 0
   fi
 
@@ -22,7 +22,7 @@ find_tarball() {
   local c
   for c in "${candidates[@]}"; do
     if [ -f "$c" ]; then
-      printf %sn "$c"
+      printf '%s\n' "$c"
       return 0
     fi
   done
@@ -32,7 +32,7 @@ find_tarball() {
   found="$(find "$HOME/Library/Application Support/Cursor/AgentStores" \
     -name "expnstracker-vps-${TIP}*.tgz" -type f 2>/dev/null | sort | tail -1 || true)"
   if [ -n "$found" ] && [ -f "$found" ]; then
-    printf %sn "$found"
+    printf '%s\n' "$found"
     return 0
   fi
   return 1
@@ -44,10 +44,13 @@ TGZ="$(find_tarball)" || {
   exit 1
 }
 
-WORKDIR="${TMPDIR:-/tmp}/expnstracker-vps-deploy-${TIP}"
+TMP_BASE="${TMPDIR:-/tmp}"
+TMP_BASE="${TMP_BASE%/}"
+WORKDIR="${TMP_BASE}/expnstracker-vps-deploy-${TIP}"
 rm -rf "$WORKDIR"
 mkdir -p "$WORKDIR"
-echo "==> Extract $TGZ → $WORKDIR"
+echo "==> Extract: $TGZ"
+echo "==> Workdir: $WORKDIR"
 tar -xzf "$TGZ" -C "$WORKDIR"
 cd "$WORKDIR"
 
