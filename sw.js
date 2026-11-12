@@ -1,5 +1,5 @@
-/* ExpnsTracker app-shell cache. Generated: 376fb48983cc */
-const CACHE_NAME = "expnstracker-shell-376fb48983cc";
+/* ExpnsTracker app-shell cache. Generated: 443366cee84e */
+const CACHE_NAME = "expnstracker-shell-443366cee84e";
 const OFFLINE_URL = "./offline.html";
 const PRECACHE = [
   "./",
@@ -9,6 +9,9 @@ const PRECACHE = [
   "./__next.__PAGE__.txt",
   "./__next._full.txt",
   "./__next._tree.txt",
+  "./_next/static/OEvL1G8Lz5Kkvkg0QZahx/_buildManifest.js",
+  "./_next/static/OEvL1G8Lz5Kkvkg0QZahx/_clientMiddlewareManifest.js",
+  "./_next/static/OEvL1G8Lz5Kkvkg0QZahx/_ssgManifest.js",
   "./_next/static/chunks/09jeq4l1ap6np.js",
   "./_next/static/chunks/0cz1d0mv5g_q7.js",
   "./_next/static/chunks/0dmugq4pyfyhs.js",
@@ -19,10 +22,10 @@ const PRECACHE = [
   "./_next/static/chunks/0yrn-4294x9cd.js",
   "./_next/static/chunks/1do8kcbi-j7sh.js",
   "./_next/static/chunks/1fzcvtb-n5gu_.js",
-  "./_next/static/chunks/1k_ozz9fc-vj3.css",
   "./_next/static/chunks/1lul6wkt8xoun.js",
   "./_next/static/chunks/21zchlj292zr4.js",
   "./_next/static/chunks/23vlemge9xg4g.js",
+  "./_next/static/chunks/24eio25nkbuaf.css",
   "./_next/static/chunks/28w9dcstardro.js",
   "./_next/static/chunks/2adi_soycf-dv.js",
   "./_next/static/chunks/2akj94hd__nc1.js",
@@ -36,9 +39,6 @@ const PRECACHE = [
   "./_next/static/chunks/3kjfmt3rlkcp6.js",
   "./_next/static/chunks/41l6xr7r38wkm.js",
   "./_next/static/chunks/turbopack-13cikesthjkba.js",
-  "./_next/static/f0EdGW_oio0hlG38CWU2V/_buildManifest.js",
-  "./_next/static/f0EdGW_oio0hlG38CWU2V/_clientMiddlewareManifest.js",
-  "./_next/static/f0EdGW_oio0hlG38CWU2V/_ssgManifest.js",
   "./_next/static/media/1b99372b3eaef0c8-s.p.1gsd1jahc5dg_.woff2",
   "./_next/static/media/apple-icon.3qs50o59-epg-.png",
   "./_next/static/media/b2ea385cb5ae8625-s.1spbknb88wd48.woff2",
