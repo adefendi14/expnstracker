@@ -6,7 +6,16 @@
 #   TIP_TGZ=/path/to/expnstracker-vps-d1e5dc1.tgz ./scripts/deploy-latest-tip.sh
 set -euo pipefail
 
-TIP="${TIP:-d1e5dc1}"
+TIP="${TIP:-e42c20e}"
+
+# STOP: do not redeploy superseded tip d1e5dc1 — server Postgres tip is e42c20e (EXP-111).
+if [ "${TIP}" = "d1e5dc1" ] && [ "${FORCE_OLD_TIP:-0}" != "1" ]; then
+  echo "ERROR: tip d1e5dc1 is superseded by server-db tip e42c20e." >&2
+  echo "       Cancel any running d1e5dc1 deploy. Wait for / use TIP=e42c20e." >&2
+  echo "       (override only with FORCE_OLD_TIP=1 if you really mean it)" >&2
+  exit 2
+fi
+
 SSH_KEY="${VPS_SSH_KEY:-$HOME/.ssh/id_ed25519}"
 
 find_tarball() {
