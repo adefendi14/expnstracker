@@ -1,5 +1,5 @@
-/* ExpnsTracker app-shell cache. Generated: c96cb3b49453 */
-const CACHE_NAME = "expnstracker-shell-c96cb3b49453";
+/* ExpnsTracker app-shell cache. Generated: 85c32fd2d8c0 */
+const CACHE_NAME = "expnstracker-shell-85c32fd2d8c0";
 const OFFLINE_URL = "./offline.html";
 const PRECACHE = [
   "./",
@@ -9,31 +9,35 @@ const PRECACHE = [
   "./__next.__PAGE__.txt",
   "./__next._full.txt",
   "./__next._tree.txt",
-  "./_next/static/cYmbFfI3utSs5bHtOs9lC/_buildManifest.js",
-  "./_next/static/cYmbFfI3utSs5bHtOs9lC/_clientMiddlewareManifest.js",
-  "./_next/static/cYmbFfI3utSs5bHtOs9lC/_ssgManifest.js",
+  "./_next/static/Z2evDCUMQ2RcuGu94l34I/_buildManifest.js",
+  "./_next/static/Z2evDCUMQ2RcuGu94l34I/_clientMiddlewareManifest.js",
+  "./_next/static/Z2evDCUMQ2RcuGu94l34I/_ssgManifest.js",
+  "./_next/static/chunks/09jeq4l1ap6np.js",
   "./_next/static/chunks/0cz1d0mv5g_q7.js",
-  "./_next/static/chunks/0jmda_1ipqo6f.js",
+  "./_next/static/chunks/0dmugq4pyfyhs.js",
+  "./_next/static/chunks/0n2uf0t-orzex.js",
+  "./_next/static/chunks/0stuztam7mp6-.js",
+  "./_next/static/chunks/0xzyk3_21r1wo.js",
+  "./_next/static/chunks/0ybn0u0fth9ao.js",
   "./_next/static/chunks/0yrn-4294x9cd.js",
-  "./_next/static/chunks/1-argcenfupo4.css",
-  "./_next/static/chunks/15mw3pj1nhdgq.js",
-  "./_next/static/chunks/17mws-37jlrm2.js",
-  "./_next/static/chunks/1a1irh9crs5_t.js",
-  "./_next/static/chunks/1c-44js1np-ox.js",
+  "./_next/static/chunks/1do8kcbi-j7sh.js",
+  "./_next/static/chunks/1fzcvtb-n5gu_.js",
+  "./_next/static/chunks/1k_ozz9fc-vj3.css",
   "./_next/static/chunks/1lul6wkt8xoun.js",
-  "./_next/static/chunks/1tp-nnk54pr92.js",
-  "./_next/static/chunks/1ynfue7xyf1ym.js",
+  "./_next/static/chunks/21zchlj292zr4.js",
+  "./_next/static/chunks/23vlemge9xg4g.js",
   "./_next/static/chunks/28w9dcstardro.js",
+  "./_next/static/chunks/2adi_soycf-dv.js",
+  "./_next/static/chunks/2akj94hd__nc1.js",
+  "./_next/static/chunks/2ft35q_la2wnn.js",
   "./_next/static/chunks/2i51e627rllld.js",
-  "./_next/static/chunks/2memh-0esb7g0.js",
-  "./_next/static/chunks/2mrhb970c-cci.js",
   "./_next/static/chunks/2n4_yuge5nzdu.js",
-  "./_next/static/chunks/2se275j_og0-w.js",
+  "./_next/static/chunks/2tfanji3ih7vz.js",
   "./_next/static/chunks/36bf9x9bm7-ly.js",
-  "./_next/static/chunks/3a_6u49b0tw3t.js",
+  "./_next/static/chunks/3adf5eg7p3fr6.js",
   "./_next/static/chunks/3fntmmi971322.js",
-  "./_next/static/chunks/3hz9hhc0_kv6f.js",
-  "./_next/static/chunks/3wrmsek9ufch5.js",
+  "./_next/static/chunks/3kjfmt3rlkcp6.js",
+  "./_next/static/chunks/41l6xr7r38wkm.js",
   "./_next/static/chunks/turbopack-13cikesthjkba.js",
   "./_next/static/media/1b99372b3eaef0c8-s.p.1gsd1jahc5dg_.woff2",
   "./_next/static/media/apple-icon.3qs50o59-epg-.png",
@@ -54,12 +58,18 @@ const PRECACHE = [
   "./aggiungi/index.txt",
   "./apple-icon.png",
   "./apple-touch-icon.png",
-  "./elenco/",
-  "./elenco/__next._full.txt",
-  "./elenco/__next._tree.txt",
-  "./elenco/__next.elenco.__PAGE__.txt",
-  "./elenco/index.html",
-  "./elenco/index.txt",
+  "./cronologia/",
+  "./cronologia/__next._full.txt",
+  "./cronologia/__next._tree.txt",
+  "./cronologia/__next.cronologia.__PAGE__.txt",
+  "./cronologia/index.html",
+  "./cronologia/index.txt",
+  "./cronologia/movimento/",
+  "./cronologia/movimento/__next._full.txt",
+  "./cronologia/movimento/__next._tree.txt",
+  "./cronologia/movimento/__next.cronologia.movimento.__PAGE__.txt",
+  "./cronologia/movimento/index.html",
+  "./cronologia/movimento/index.txt",
   "./favicon-32.png",
   "./favicon.ico",
   "./favicon.svg",
@@ -68,6 +78,7 @@ const PRECACHE = [
   "./icon.png",
   "./index.html",
   "./index.txt",
+  "./logo-plain.svg",
   "./logo.svg",
   "./manifest.webmanifest",
   "./offline.html",
@@ -89,6 +100,7 @@ const PRECACHE = [
   "./salvadanai/__next.salvadanai.__PAGE__.txt",
   "./salvadanai/index.html",
   "./salvadanai/index.txt",
+  "./seed/expnstracker-test.sqlite",
   "./sql-wasm.wasm"
 ];
 
@@ -150,6 +162,17 @@ function isPageRequest(request) {
   return accept.includes("text/html");
 }
 
+/** Soft navigations + hashed bundles must not be served stale from cache-first. */
+function preferNetwork(request) {
+  if (isPageRequest(request)) return true;
+  const path = new URL(request.url).pathname;
+  if (path.includes("/_next/")) return true;
+  if (path.includes("/__next")) return true;
+  if (path.endsWith(".txt")) return true;
+  if (path.endsWith(".js") || path.endsWith(".css")) return true;
+  return false;
+}
+
 async function lookup(request) {
   const url = new URL(request.url);
   const base = url.origin + url.pathname.replace(/\/+$/, "") ;
@@ -192,6 +215,19 @@ async function offlinePage() {
 }
 
 async function handleRequest(request) {
+  if (preferNetwork(request)) {
+    try {
+      const response = await fetch(request);
+      await store(request, response);
+      return response;
+    } catch {
+      const hit = await lookup(request);
+      if (hit) return hit;
+      if (isPageRequest(request)) return offlinePage();
+      return new Response("", { status: 503, statusText: "Offline" });
+    }
+  }
+
   const hit = await lookup(request);
   if (hit) return hit;
 
