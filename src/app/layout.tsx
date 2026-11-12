@@ -18,7 +18,9 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     title: "ExpnsTracker",
-    statusBarStyle: "default",
+    // Match the explicit black-translucent meta below so content can paint
+    // under the status bar; the opaque mobile header fills the safe area.
+    statusBarStyle: "black-translucent",
   },
   formatDetection: {
     telephone: false,
@@ -42,7 +44,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#F4F3EF" },
-    { media: "(prefers-color-scheme: dark)", color: "#121214" },
+    { media: "(prefers-color-scheme: dark)", color: "#0F0F10" },
   ],
   width: "device-width",
   initialScale: 1,
@@ -56,13 +58,19 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <head>
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="ExpnsTracker" />
         <link rel="icon" href={withBase("/favicon.svg")} type="image/svg+xml" />
         <link rel="icon" href={withBase("/favicon-32.png")} type="image/png" sizes="32x32" />
         <link rel="apple-touch-icon" href={withBase("/apple-touch-icon.png")} sizes="180x180" />
+        <link
+          rel="preload"
+          href={withBase("/sql-wasm.wasm")}
+          as="fetch"
+          crossOrigin="anonymous"
+        />
       </head>
-      <body className="min-h-full bg-background font-sans text-foreground">
+      <body className="h-full overflow-hidden bg-background font-sans text-foreground">
         <Providers>{children}</Providers>
       </body>
     </html>

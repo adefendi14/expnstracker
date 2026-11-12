@@ -1,5 +1,5 @@
 import { ListsGate } from "@/components/lists-gate";
 
-export default function ElencoPage() {
+export default function CronologiaPage() {
   return <ListsGate />;
 }

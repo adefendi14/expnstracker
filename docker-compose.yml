@@ -1,0 +1,24 @@
+services:
+  expnstracker:
+    build: .
+    container_name: expnstracker
+    restart: unless-stopped
+    ports:
+      # Default away from arteco/Gumbi on 80/443 — override with .env if needed.
+      - "${HTTP_PORT:-8088}:80"
+      - "${HTTPS_PORT:-3443}:443"
+    environment:
+      # Container always serves TLS on :443; host maps HTTPS_PORT → 443.
+      # With a real DNS name, Caddy obtains Let's Encrypt automatically.
+      # Examples:
+      #   SITE_ADDRESS=expnstracker.example.com
+      #   SITE_ADDRESS=:443
+      SITE_ADDRESS: ${SITE_ADDRESS:-:443}
+      ACME_EMAIL: ${ACME_EMAIL:-}
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_data:
+  caddy_config:

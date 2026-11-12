@@ -1,0 +1,12 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.vps
+      args:
+        DEPLOY_SHA: ${DEPLOY_SHA:-unknown}
+    image: expnstracker-web
+    container_name: expnstracker-web
+    restart: unless-stopped
+    ports:
+      - "3003:80"

@@ -39,39 +39,24 @@ function useNativePrompt() {
 function IosSteps() {
   return (
     <ol className="flex flex-col gap-2">
-      <li className="flex items-start gap-3 rounded-2xl bg-muted/70 px-4 py-3.5">
-        <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-foreground text-sm font-semibold text-background">
+      <li className="flex items-center gap-3 rounded-2xl bg-muted/70 px-4 py-3.5">
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-foreground text-sm font-semibold text-background">
           1
         </span>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium">Tocca Condividi</p>
-          <p className="mt-0.5 text-xs leading-5 text-muted-foreground">
-            In basso al centro: il quadrato con la freccia verso l’alto.
-          </p>
-        </div>
-        <Share className="mt-1 size-5 shrink-0 text-foreground" aria-hidden />
+        <p className="min-w-0 flex-1 text-sm font-medium">Condividi</p>
+        <Share className="size-5 shrink-0 text-foreground" aria-hidden />
       </li>
-      <li className="flex items-start gap-3 rounded-2xl bg-muted/70 px-4 py-3.5">
-        <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-foreground text-sm font-semibold text-background">
+      <li className="flex items-center gap-3 rounded-2xl bg-muted/70 px-4 py-3.5">
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-foreground text-sm font-semibold text-background">
           2
         </span>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium">Aggiungi a Home</p>
-          <p className="mt-0.5 text-xs leading-5 text-muted-foreground">
-            Scorri il foglio di Safari e tocca «Aggiungi a Home».
-          </p>
-        </div>
+        <p className="min-w-0 flex-1 text-sm font-medium">Aggiungi a Home</p>
       </li>
-      <li className="flex items-start gap-3 rounded-2xl bg-muted/70 px-4 py-3.5">
-        <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-foreground text-sm font-semibold text-background">
+      <li className="flex items-center gap-3 rounded-2xl bg-muted/70 px-4 py-3.5">
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-foreground text-sm font-semibold text-background">
           3
         </span>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium">Conferma ExpnsTracker</p>
-          <p className="mt-0.5 text-xs leading-5 text-muted-foreground">
-            Tocca Aggiungi. L’icona del maialino compare in Home.
-          </p>
-        </div>
+        <p className="min-w-0 flex-1 text-sm font-medium">Conferma</p>
       </li>
     </ol>
   );
@@ -92,7 +77,7 @@ export function InstallHomeButton() {
 
   const ios = isIosDevice();
   const iosSafari = isIosSafari();
-  const label = ios ? "Aggiungi a Home" : "Installa l’app";
+  const label = ios ? "Aggiungi a Home" : "Installa";
 
   async function onClick() {
     if (ios) {
@@ -132,19 +117,17 @@ export function InstallHomeButton() {
             <SheetHeader>
               <SheetTitle>Aggiungi a Home</SheetTitle>
               <SheetDescription>
-                {iosSafari
-                  ? "Su iPhone Safari non può farlo da solo. Servono tre tap, poi l’app si apre a schermo intero."
-                  : "Chrome e gli altri browser su iPhone non possono aggiungere l’app. Apri questa pagina in Safari, poi segui i passi."}
+                {iosSafari ? "Tre passaggi in Safari." : "Apri la pagina in Safari."}
               </SheetDescription>
             </SheetHeader>
             <div className="px-4 pb-4">
               <IosSteps />
               <button
                 type="button"
-                className="mt-4 inline-flex h-12 w-full items-center justify-center rounded-2xl bg-primary px-4 text-sm font-medium text-primary-foreground"
+                className="mt-4 inline-flex h-12 w-full items-center justify-center rounded-2xl bg-brand-strong px-4 text-sm font-medium text-brand-foreground"
                 onClick={() => setHelpOpen(false)}
               >
-                Ho capito
+                Ok
               </button>
             </div>
           </SheetContent>
@@ -153,27 +136,20 @@ export function InstallHomeButton() {
         <Dialog open={helpOpen} onOpenChange={setHelpOpen}>
           <DialogContent className="rounded-3xl sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>Installa l’app</DialogTitle>
-              <DialogDescription>
-                Questo browser non ha mostrato il pannello di installazione automatica. Puoi comunque
-                aggiungerla dal menu.
-              </DialogDescription>
+              <DialogTitle>Installa</DialogTitle>
+              <DialogDescription>Dal menu del browser.</DialogDescription>
             </DialogHeader>
             <ul className="flex flex-col gap-2 text-sm">
-              <li className="rounded-2xl bg-muted/70 px-4 py-3">
-                Chrome o Edge: menu ⋮ → <span className="font-medium">Installa app</span>
-              </li>
-              <li className="rounded-2xl bg-muted/70 px-4 py-3">
-                Su Android, a volte compare anche «Aggiungi a schermata Home».
-              </li>
+              <li className="rounded-2xl bg-muted/70 px-4 py-3">Chrome / Edge → Installa app</li>
+              <li className="rounded-2xl bg-muted/70 px-4 py-3">Android → Aggiungi a Home</li>
             </ul>
             <DialogFooter>
               <button
                 type="button"
-                className="inline-flex h-11 items-center justify-center rounded-2xl bg-primary px-4 text-sm font-medium text-primary-foreground"
+                className="inline-flex h-11 items-center justify-center rounded-2xl bg-brand-strong px-4 text-sm font-medium text-brand-foreground"
                 onClick={() => setHelpOpen(false)}
               >
-                Ho capito
+                Ok
               </button>
             </DialogFooter>
           </DialogContent>

@@ -2,7 +2,9 @@
 
 Personal PWA for debts, credits, expenses, savings goals, and investment ideas. The interface is Italian, amounts are in euro.
 
-Accounts are local (register / login). All data lives in a SQLite file on the device (`expnstracker.sqlite`), kept in the browser and exportable. No cloud, no backend.
+Accounts are local (register / login). The username must be a valid email. Each account has its own encrypted SQLite vault on the device (AES-GCM, key derived from the password). The account list stores only emails and password verifiers; financial data is unreadable without the account password. No cloud, no backend.
+
+Optional **PIN unlock** (4–6 digits) can be enabled or disabled from the same account menu as the light/dark theme toggle. Optional **email recovery**: link an email in that menu (or at registration), then use **Password dimenticata?** on the login screen with username or email. Without a mail API (GitHub Pages), the app downloads an HTML recovery message with a deep link to set a new password on this device.
 
 Stack: Next.js App Router, TypeScript, Tailwind CSS, shadcn/ui, sql.js.
 
@@ -15,7 +17,7 @@ npm install
 npm run dev
 ```
 
-The app listens on [http://127.0.0.1:4317](http://127.0.0.1:4317). Create an account on first open. Each account only sees its own movements.
+The app listens on [http://127.0.0.1:4317](http://127.0.0.1:4317). Create an account on first open. Each account only sees and can decrypt its own vault. After closing the browser you must sign in again to unlock data (a tab refresh can resume the unlocked session).
 
 `next dev` does not register the service worker (so hot reload stays intact). Use `npm run build` and `npm start` to try the installed/offline PWA.
 
@@ -26,9 +28,25 @@ npm run build
 npm start
 ```
 
-Open the same URL. Clearing site data deletes the SQLite file. Use **Esporta file** to keep a copy of `expnstracker.sqlite`.
+Open the same URL. Clearing site data deletes the encrypted vaults. Use **Esporta file** while signed in to keep a decrypted copy of your SQLite vault.
 
 If you still have the old LocalStorage dump, the first account created on that browser imports it automatically.
+
+## Hostinger VPS (Docker + HTTPS)
+
+Come sulla VPS di arteco/Gumbi, ma su **porte dedicate** (default **8088** HTTP / **3443** HTTPS; 8443 è spesso già usata):
+
+```bash
+./deploy/deploy-hostinger.sh
+```
+
+Se l’app è già su `http://<IP>:3003`, sul server:
+
+```bash
+./deploy/enable-https-proxy.sh
+```
+
+Apri `https://<IP-VPS>:3443/`. Dettagli in `deploy/README.md`.
 
 ## Pubblica su GitHub Pages
 
@@ -80,11 +98,11 @@ La prima visita serve internet. Poi Home / Aggiungi a Home apre Riepilogo anche 
 
 - **Account**: create users, log in, log out. Passwords are hashed with PBKDF2 on the device.
 - **File SQLite**: export / import `expnstracker.sqlite` to move the whole database (all accounts) between browsers. On iPhone, Files used to grey out `.sqlite` because it is not a known type; import now accepts any file and checks the SQLite header.
-- **Riepilogo**: estimated balance (open credits − open debts only). Piggy banks are separate goal trackers. Rankings show the top 3 people who owe you and the top 3 you owe.
+- **Riepilogo**: open Debiti and Crediti totals. Piggy banks are separate goal trackers. Rankings show the top 3 people who owe you and the top 3 you owe.
 - **Persone**: every Chi name becomes a profile. Open a person for totals, monthly charts, and the history of debiti, crediti, versamenti, and linked expenses.
 - **Aggiungi**: one form with tabs for Debito/Credito, Spesa, and Idea di investimento. Chi is a profile picker (existing names plus a new one).
 - **Salvadanai**: create euro targets, add or withdraw funds, see `450€ / 1000€ — 45%`.
-- **Elenco**: browse, search, filter, edit, settle debts, complete ideas, delete items.
+- **Cronologia**: browse, search, filter, edit, settle debts, complete ideas, delete items.
 
 ## Project layout
 

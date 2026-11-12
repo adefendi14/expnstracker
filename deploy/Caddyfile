@@ -1,0 +1,23 @@
+{
+	# Host maps HTTPS_PORT (default 8443) → container 443.
+	# SITE_ADDRESS=:443 → TLS on the container port (self-signed / local CA on bare IP).
+	# SITE_ADDRESS=hostname → Let's Encrypt when DNS points here (set ACME_EMAIL).
+	email {$ACME_EMAIL:}
+}
+
+{$SITE_ADDRESS::443} {
+	root * /srv
+	encode zstd gzip
+	try_files {path} {path}/ /index.html
+	file_server
+
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		# PWA + SQLite stay on-device; allow service worker scope
+		Service-Worker-Allowed /
+	}
+
+	@sw path /sw.js
+	header @sw Cache-Control "no-cache"
+}

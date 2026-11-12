@@ -1,24 +1,28 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import { ListsScreen } from "@/components/lists-screen";
 import { StorageError } from "@/components/screen-states";
+import { parseCronologiaQuery } from "@/lib/cronologia-query";
 import { useStore } from "@/lib/store";
-import type { ListKind } from "@/lib/types";
 
-export function ListsGate() {
+function ListsGateInner() {
   const { status, errorMessage, resetStorage } = useStore();
-  const [initialKind, setInitialKind] = useState<ListKind>("tutti");
-
-  useEffect(() => {
-    const tipo = new URLSearchParams(window.location.search).get("tipo");
-    if (tipo === "debiti" || tipo === "crediti" || tipo === "spese" || tipo === "idee") {
-      setInitialKind(tipo);
-    }
-  }, []);
+  const searchParams = useSearchParams();
+  const query = useMemo(() => parseCronologiaQuery(searchParams), [searchParams]);
 
   if (status === "error") {
     return <StorageError message={errorMessage ?? "Errore di lettura."} onReset={resetStorage} />;
   }
-  return <ListsScreen initialKind={initialKind} />;
+
+  return <ListsScreen initialKind={query.kind} initialStatus={query.status} />;
+}
+
+export function ListsGate() {
+  return (
+    <Suspense fallback={null}>
+      <ListsGateInner />
+    </Suspense>
+  );
 }

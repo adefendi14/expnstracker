@@ -21,6 +21,8 @@ export type AmountKind = "stimato" | "attuale";
 
 export type LedgerEntry = {
   id: string;
+  /** Unique display title per user (used for search/association). */
+  title: string;
   direction: DebtDirection;
   person: string;
   personId?: string;
@@ -29,6 +31,10 @@ export type LedgerEntry = {
   dueDate?: string;
   notes?: string;
   settled: boolean;
+  /** If set, this row is a payment/settlement/storno linked to the original ledger entry. */
+  relatedLedgerId?: string;
+  /** Optional link to another principal debt/credit for grouping. */
+  associatedLedgerId?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -40,6 +46,7 @@ export type Expense = {
   date: string;
   notes?: string;
   personId?: string;
+  completed: boolean;
   createdAt: string;
   updatedAt: string;
 };
@@ -57,7 +64,10 @@ export type PersonEventKind =
   | "versamento"
   | "storno"
   | "spesa"
-  | "obiettivo";
+  | "obiettivo"
+  | "apertura"
+  | "chiusura"
+  | "estinzione";
 
 export type PersonEvent = {
   id: string;
@@ -100,6 +110,9 @@ export type UserAccount = {
   id: string;
   name: string;
   username: string;
+  email?: string;
+  pinEnabled: boolean;
+  recoveryEnabled: boolean;
   createdAt: string;
 };
 

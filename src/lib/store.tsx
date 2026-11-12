@@ -19,31 +19,115 @@ import {
   type PiggyBank,
   type UserAccount,
 } from "@/lib/types";
-import { isThisMonth, ledgerPaid, ledgerRemaining } from "@/lib/format";
+import {
+  isLedgerPayment,
+  isThisMonth,
+  ledgerIsClosed,
+  ledgerPaid,
+  ledgerRemaining,
+  normalizeLedgerTitle,
+} from "@/lib/format";
 import { EXPORT_DATABASE_MIME } from "@/lib/import-file";
-import { createId } from "@/lib/id";
-import { assertPassword, hashPassword, verifyPassword } from "@/lib/password";
+import { hashPassword, verifyPassword } from "@/lib/password";
 import {
   countUsers,
   deleteExpenseRow,
   deleteIdeaRow,
   deleteLedgerRow,
   deletePiggyRow,
+  deleteRelatedLedgerRows,
   findUserAuth,
   findUserById,
   insertExpense,
+  isPinEnabledForUsername,
   insertIdea,
   insertLedger,
   insertLegacyData,
+  insertLifecycleEvent,
   insertPiggy,
   insertUser,
+  isLedgerTitleTaken,
   loadUserData,
+  renamePerson as renamePersonRow,
   updateExpenseRow,
   updateIdeaRow,
   updateLedgerRow,
   updatePiggyRow,
 } from "@/lib/queries";
-import { exportSqliteBytes, openSqlite, persist, replaceSqlite, wipeSqlite } from "@/lib/sqlite";
+import { withBase } from "@/lib/paths";
+import { newUuid } from "@/lib/uuid";
+import {
+  exportSqliteBytes,
+  installPlaintextSeed,
+  lockVault,
+  openSqlite,
+  persist,
+  prefetchSqliteRuntime,
+  clearAccountEmail,
+  completePasswordRecovery,
+  disablePinUnlock,
+  enablePinUnlock,
+  linkAccountEmail,
+  preparePasswordRecovery,
+  provisionUserVault,
+  replaceSqlite,
+  resumeVaultSession,
+  runDirectorySql,
+  unlockUserVault,
+  unlockUserVaultWithPin,
+} from "@/lib/sqlite";
+import {
+  buildRecoveryUrl,
+  dispatchRecoveryEmail,
+  isValidEmail,
+  isValidPin,
+  normalizeEmail,
+  type RecoveryDispatchResult,
+} from "@/lib/account-security";
+
+const TEST_SEED_USER_ID = "user-test-andrea";
+const TEST_SEED_MARKER_KEY = "expnstracker.seed";
+const TEST_SEED_MARKER = "test-2-encrypted";
+const TEST_SEED_PARAM = "seed";
+const TEST_SEED_VALUE = "test";
+/** Known password used only when installing the local encrypted test seed. */
+export const TEST_SEED_PASSWORD = "password";
+
+async function loadTestSeedDatabase() {
+  const response = await fetch(withBase("/seed/expnstracker-test.sqlite"));
+  if (!response.ok) {
+    throw new Error("Impossibile scaricare i dati di test.");
+  }
+  const buffer = new Uint8Array(await response.arrayBuffer());
+  localStorage.removeItem(SESSION_KEY);
+  localStorage.removeItem(STORAGE_KEY);
+  await installPlaintextSeed(buffer, TEST_SEED_PASSWORD);
+  // Align directory password verifier with the wrap password so unlock works cold.
+  const secret = await hashPassword(TEST_SEED_PASSWORD);
+  runDirectorySql(
+    "UPDATE users SET username = ?, password_salt = ?, password_hash = ? WHERE id = ?",
+    ["test@example.com", secret.salt, secret.hash, TEST_SEED_USER_ID]
+  );
+  await persist();
+  localStorage.setItem(SESSION_KEY, TEST_SEED_USER_ID);
+  localStorage.setItem(TEST_SEED_MARKER_KEY, TEST_SEED_MARKER);
+}
+
+async function applyTestSeedIfNeeded() {
+  if (typeof window === "undefined") return false;
+  const url = new URL(window.location.href);
+  const force = url.searchParams.get(TEST_SEED_PARAM) === TEST_SEED_VALUE;
+  const alreadySeeded = localStorage.getItem(TEST_SEED_MARKER_KEY) === TEST_SEED_MARKER;
+  if (!force && alreadySeeded) return false;
+
+  await loadTestSeedDatabase();
+
+  if (force) {
+    url.searchParams.delete(TEST_SEED_PARAM);
+    window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+  }
+  return true;
+}
 
 export type AuthStatus = "loading" | "signedOut" | "ready" | "error";
 export type StoreStatus = "ready" | "error";
@@ -61,6 +145,7 @@ type RegisterInput = {
   name: string;
   username: string;
   password: string;
+  email?: string;
 };
 
 type StoreContextValue = {
@@ -72,7 +157,20 @@ type StoreContextValue = {
   data: AppData;
   register: (input: RegisterInput) => Promise<void>;
   login: (username: string, password: string) => Promise<void>;
+  loginWithPin: (username: string, pin: string) => Promise<void>;
   logout: () => void;
+  isPinLoginAvailable: (username: string) => boolean;
+  enablePin: (pin: string, confirmPin: string) => Promise<void>;
+  disablePin: () => Promise<void>;
+  linkEmail: (email: string) => Promise<void>;
+  unlinkEmail: () => Promise<void>;
+  requestPasswordRecovery: (usernameOrEmail: string) => Promise<RecoveryDispatchResult>;
+  finishPasswordRecovery: (
+    userId: string,
+    token: string,
+    password: string,
+    confirm: string
+  ) => Promise<void>;
   exportDatabase: () => void;
   importDatabase: (file: File) => Promise<void>;
   resetStorage: () => Promise<void>;
@@ -83,7 +181,15 @@ type StoreContextValue = {
   deleteLedger: (id: string) => void;
   adjustLedgerPaid: (id: string, delta: number) => void;
   adjustLedgerTarget: (id: string, delta: number) => void;
-  addExpense: (entry: Omit<Expense, "id" | "createdAt" | "updatedAt" | "personId"> & { person?: string }) => Expense;
+  extinguishLedger: (id: string) => void;
+  reopenLedger: (id: string) => void;
+  isLedgerTitleAvailable: (title: string, exceptId?: string) => boolean;
+  addExpense: (
+    entry: Omit<Expense, "id" | "createdAt" | "updatedAt" | "personId" | "completed"> & {
+      person?: string;
+      completed?: boolean;
+    }
+  ) => Expense;
   updateExpense: (id: string, patch: Partial<Expense> & { person?: string | null }) => void;
   deleteExpense: (id: string) => void;
   addIdea: (entry: Omit<InvestmentIdea, "id" | "createdAt" | "updatedAt">) => InvestmentIdea;
@@ -95,6 +201,7 @@ type StoreContextValue = {
   updatePiggy: (id: string, patch: Partial<PiggyBank>) => void;
   deletePiggy: (id: string) => void;
   adjustPiggy: (id: string, delta: number) => void;
+  renamePerson: (id: string, name: string) => void;
   totals: {
     openDebts: number;
     openCredits: number;
@@ -107,7 +214,6 @@ type StoreContextValue = {
 };
 
 const StoreContext = createContext<StoreContextValue | null>(null);
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const listeners = new Set<() => void>();
 let snapshot: Snapshot = {
@@ -131,6 +237,52 @@ function setSnapshot(next: Snapshot) {
 
 function nowIso() {
   return new Date().toISOString();
+}
+
+function extinguishLedgerInDb(userId: string, currentItem: LedgerEntry, ledger: LedgerEntry[]) {
+  const remaining = ledgerRemaining(currentItem, ledger);
+  if (remaining <= 0) return;
+  const stamp = nowIso();
+  insertLedger(userId, {
+    id: createId(),
+    title: `${currentItem.title} · Estinzione`,
+    direction: currentItem.direction,
+    person: currentItem.person,
+    personId: currentItem.personId,
+    amount: remaining,
+    paid: 0,
+    notes: "Estinzione",
+    settled: true,
+    relatedLedgerId: currentItem.id,
+    createdAt: stamp,
+    updatedAt: stamp,
+  });
+}
+
+function reopenLedgerInDb(userId: string, currentItem: LedgerEntry) {
+  const stamp = nowIso();
+  deleteRelatedLedgerRows(userId, currentItem.id);
+  updateLedgerRow(
+    userId,
+    currentItem.id,
+    { ...currentItem, settled: false, paid: 0, updatedAt: stamp },
+    currentItem
+  );
+  if (currentItem.personId) {
+    insertLifecycleEvent(userId, {
+      personId: currentItem.personId,
+      kind: "apertura",
+      direction: currentItem.direction,
+      amount: currentItem.amount,
+      ledgerId: currentItem.id,
+      notes: "Riapertura",
+      at: stamp,
+    });
+  }
+}
+
+function createId() {
+  return newUuid();
 }
 
 function parseLegacy(raw: string | null): AppData | null {
@@ -195,16 +347,29 @@ async function persistOrThrow() {
 async function boot() {
   if (booting) return;
   booting = true;
+  prefetchSqliteRuntime();
   try {
     await openSqlite();
-    const sessionId = localStorage.getItem(SESSION_KEY);
-    const user = sessionId ? findUserById(sessionId) : undefined;
-    if (user) {
-      refreshUser(user);
-    } else {
-      localStorage.removeItem(SESSION_KEY);
-      setSnapshot(signedOutSnapshot());
+    const seeded = await applyTestSeedIfNeeded();
+    if (seeded) {
+      const user = findUserById(TEST_SEED_USER_ID);
+      if (user) {
+        refreshUser(user);
+        return;
+      }
     }
+    const sessionId = localStorage.getItem(SESSION_KEY);
+    if (sessionId) {
+      const resumed = await resumeVaultSession(sessionId);
+      const user = findUserById(sessionId);
+      if (resumed && user) {
+        refreshUser(user);
+        return;
+      }
+    }
+    localStorage.removeItem(SESSION_KEY);
+    await lockVault();
+    setSnapshot(signedOutSnapshot());
   } catch (error) {
     setSnapshot({
       authStatus: "error",
@@ -228,6 +393,10 @@ function subscribe(listener: () => void) {
   };
 }
 
+if (typeof window !== "undefined") {
+  void boot();
+}
+
 function getSnapshot() {
   return snapshot;
 }
@@ -242,45 +411,45 @@ const serverSnapshot: Snapshot = {
 };
 
 function normalizeUsername(value: string) {
-  return value.trim().toLowerCase();
+  return normalizeEmail(value);
 }
 
 function validateCredentials(name: string, username: string, password: string) {
   if (name.trim().length < 2) {
     throw new Error("Inserisci il nome (almeno 2 caratteri).");
   }
-  if (!EMAIL_PATTERN.test(username)) {
-    throw new Error("Inserisci un indirizzo email valido.");
+  if (!isValidEmail(username)) {
+    throw new Error("Lo username deve essere un’email valida.");
   }
-  assertPassword(password);
+  if (password.length < 6) {
+    throw new Error("La password deve avere almeno 6 caratteri.");
+  }
 }
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const current = useSyncExternalStore(subscribe, getSnapshot, () => serverSnapshot);
 
-  const register = useCallback(async ({ name, username, password }: RegisterInput) => {
+  const register = useCallback(async ({ name, username, password, email }: RegisterInput) => {
     const displayName = name.trim();
     const handle = normalizeUsername(username);
     validateCredentials(displayName, handle, password);
     if (findUserAuth(handle)) {
-      throw new Error("Questa email è già registrata.");
+      throw new Error("Questa email è già usata.");
     }
     const stamp = nowIso();
     const secret = await hashPassword(password);
-    const user: UserAccount = {
-      id: createId(),
+    const userId = createId();
+    insertUser({
+      id: userId,
       name: displayName,
       username: handle,
-      createdAt: stamp,
-    };
-    insertUser({
-      id: user.id,
-      name: user.name,
-      username: user.username,
       passwordSalt: secret.salt,
       passwordHash: secret.hash,
       createdAt: stamp,
     });
+    await provisionUserVault(userId, password);
+    // Username is the account email; always enable recovery on that address.
+    await linkAccountEmail(userId, email?.trim() ? normalizeEmail(email) : handle);
     if (countUsers() === 1) {
       try {
         const legacy = parseLegacy(localStorage.getItem(STORAGE_KEY));
@@ -288,15 +457,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           legacy &&
           legacy.ledger.length + legacy.expenses.length + legacy.ideas.length + legacy.piggyBanks.length > 0
         ) {
-          insertLegacyData(user.id, legacy);
+          insertLegacyData(userId, legacy);
           localStorage.removeItem(STORAGE_KEY);
         }
       } catch {
         // Keep the new account even if the old LocalStorage blob is unreadable.
       }
     }
-    localStorage.setItem(SESSION_KEY, user.id);
+    localStorage.setItem(SESSION_KEY, userId);
     await persistOrThrow();
+    const user = findUserById(userId);
+    if (!user) throw new Error("Account non trovato dopo la registrazione.");
     refreshUser(user);
   }, []);
 
@@ -310,12 +481,104 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (!user) {
       throw new Error("Account non trovato.");
     }
+    await unlockUserVault(user.id, password);
     localStorage.setItem(SESSION_KEY, user.id);
     refreshUser(user);
   }, []);
 
+  const loginWithPin = useCallback(async (username: string, pin: string) => {
+    const handle = normalizeUsername(username);
+    if (!isValidPin(pin)) {
+      throw new Error("Il PIN deve avere da 4 a 6 cifre.");
+    }
+    const row = findUserAuth(handle);
+    if (!row) {
+      throw new Error("Email o PIN non corretti.");
+    }
+    const user = findUserById(row.id);
+    if (!user) {
+      throw new Error("Account non trovato.");
+    }
+    await unlockUserVaultWithPin(user.id, pin);
+    localStorage.setItem(SESSION_KEY, user.id);
+    refreshUser(findUserById(user.id) ?? user);
+  }, []);
+
+  const isPinLoginAvailable = useCallback((username: string) => {
+    try {
+      return isPinEnabledForUsername(normalizeUsername(username));
+    } catch {
+      return false;
+    }
+  }, []);
+
+  const enablePin = useCallback(async (pin: string, confirmPin: string) => {
+    const user = requireUser();
+    if (!isValidPin(pin)) {
+      throw new Error("Il PIN deve avere da 4 a 6 cifre.");
+    }
+    if (pin !== confirmPin) {
+      throw new Error("I PIN non coincidono.");
+    }
+    await enablePinUnlock(user.id, pin);
+    await persistOrThrow();
+    refreshUser(findUserById(user.id) ?? user);
+  }, []);
+
+  const disablePin = useCallback(async () => {
+    const user = requireUser();
+    await disablePinUnlock(user.id);
+    await persistOrThrow();
+    refreshUser(findUserById(user.id) ?? user);
+  }, []);
+
+  const linkEmail = useCallback(async (email: string) => {
+    const user = requireUser();
+    await linkAccountEmail(user.id, email);
+    await persistOrThrow();
+    refreshUser(findUserById(user.id) ?? user);
+  }, []);
+
+  const unlinkEmail = useCallback(async () => {
+    const user = requireUser();
+    await clearAccountEmail(user.id);
+    await persistOrThrow();
+    refreshUser(findUserById(user.id) ?? user);
+  }, []);
+
+  const requestPasswordRecovery = useCallback(async (usernameOrEmail: string) => {
+    const prepared = await preparePasswordRecovery(usernameOrEmail);
+    const recoveryUrl = buildRecoveryUrl(prepared.userId, prepared.token);
+    return dispatchRecoveryEmail({
+      to: prepared.email,
+      name: prepared.name,
+      username: prepared.username,
+      recoveryUrl,
+    });
+  }, []);
+
+  const finishPasswordRecovery = useCallback(
+    async (userId: string, token: string, password: string, confirm: string) => {
+      if (password !== confirm) {
+        throw new Error("Le password non coincidono.");
+      }
+      if (password.length < 6) {
+        throw new Error("La password deve avere almeno 6 caratteri.");
+      }
+      await completePasswordRecovery(userId, token, password);
+      localStorage.setItem(SESSION_KEY, userId);
+      const user = findUserById(userId);
+      if (!user) {
+        throw new Error("Account non trovato dopo il recupero.");
+      }
+      refreshUser(user);
+    },
+    []
+  );
+
   const logout = useCallback(() => {
     localStorage.removeItem(SESSION_KEY);
+    void lockVault();
     setSnapshot(signedOutSnapshot());
   }, []);
 
@@ -346,10 +609,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const resetStorage = useCallback(async () => {
-    localStorage.removeItem(SESSION_KEY);
-    localStorage.removeItem(STORAGE_KEY);
-    await wipeSqlite();
-    setSnapshot(signedOutSnapshot());
+    localStorage.removeItem(TEST_SEED_MARKER_KEY);
+    await loadTestSeedDatabase();
+    const user = findUserById(TEST_SEED_USER_ID);
+    if (user) {
+      refreshUser(user);
+    } else {
+      setSnapshot(signedOutSnapshot());
+    }
   }, []);
 
   const commitUser = useCallback(
@@ -368,11 +635,28 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     []
   );
 
+  const isLedgerTitleAvailable: StoreContextValue["isLedgerTitleAvailable"] = useCallback(
+    (title, exceptId) => {
+      if (!current.user) return false;
+      return !isLedgerTitleTaken(current.user.id, title, exceptId);
+    },
+    [current.user]
+  );
+
   const addLedger: StoreContextValue["addLedger"] = useCallback(
     (entry) => {
+      const user = requireUser();
       const stamp = nowIso();
+      const title = normalizeLedgerTitle(entry.title);
+      if (!title) {
+        throw new Error("Inserisci un titolo univoco.");
+      }
+      if (isLedgerTitleTaken(user.id, title)) {
+        throw new Error("Titolo già usato. Scegline uno univoco.");
+      }
       const created: LedgerEntry = {
         ...entry,
+        title,
         paid: entry.paid ?? 0,
         id: createId(),
         createdAt: stamp,
@@ -388,16 +672,31 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     (id, patch) => {
       commitUser((userId, data) => {
         const currentItem = data.ledger.find((item) => item.id === id);
-        if (!currentItem) return;
+        if (!currentItem || isLedgerPayment(currentItem)) return;
+
+        if (patch.settled === true) {
+          extinguishLedgerInDb(userId, currentItem, data.ledger);
+          return;
+        }
+
+        if (patch.settled === false) {
+          reopenLedgerInDb(userId, currentItem);
+          return;
+        }
+
+        if (patch.title && isLedgerTitleTaken(userId, patch.title, id)) {
+          throw new Error("Titolo già usato. Scegline uno univoco.");
+        }
+
         const next: LedgerEntry = {
           ...currentItem,
           ...patch,
-          paid: patch.paid ?? currentItem.paid ?? 0,
+          title: patch.title !== undefined ? normalizeLedgerTitle(patch.title) : currentItem.title,
+          paid: currentItem.paid ?? 0,
+          settled: currentItem.settled,
+          relatedLedgerId: currentItem.relatedLedgerId,
           updatedAt: nowIso(),
         };
-        if (patch.settled === true && patch.paid === undefined) {
-          next.paid = next.amount;
-        }
         updateLedgerRow(userId, id, next, currentItem);
       });
     },
@@ -415,17 +714,40 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     (id, delta) => {
       commitUser((userId, data) => {
         const currentItem = data.ledger.find((item) => item.id === id);
-        if (!currentItem) return;
-        const paid = Math.max(
-          0,
-          Math.min(currentItem.amount, Math.round((ledgerPaid(currentItem) + delta) * 100) / 100)
-        );
-        updateLedgerRow(userId, id, {
-          ...currentItem,
-          paid,
-          settled: paid >= currentItem.amount,
-          updatedAt: nowIso(),
-        }, currentItem);
+        if (!currentItem || isLedgerPayment(currentItem) || delta === 0) return;
+        const paid = ledgerPaid(currentItem, data.ledger);
+        const remaining = ledgerRemaining(currentItem, data.ledger);
+        if (delta > 0 && delta > remaining) return;
+        if (delta < 0 && Math.abs(delta) > paid) return;
+        const stamp = nowIso();
+        const absolute = Math.round(Math.abs(delta) * 100) / 100;
+        const isFullSettle = delta > 0 && Math.abs(remaining - absolute) < 0.001;
+        const notes = delta < 0 ? "Storno" : isFullSettle ? "Estinzione" : "Versamento";
+        insertLedger(userId, {
+          id: createId(),
+          title: `${currentItem.title} · ${notes}`,
+          direction: currentItem.direction,
+          person: currentItem.person,
+          personId: currentItem.personId,
+          amount: delta > 0 ? absolute : -absolute,
+          paid: 0,
+          notes,
+          settled: true,
+          relatedLedgerId: currentItem.id,
+          createdAt: stamp,
+          updatedAt: stamp,
+        });
+        if (delta < 0 && remaining <= 0 && currentItem.personId) {
+          insertLifecycleEvent(userId, {
+            personId: currentItem.personId,
+            kind: "apertura",
+            direction: currentItem.direction,
+            amount: absolute,
+            ledgerId: currentItem.id,
+            notes: "Riapertura da storno",
+            at: stamp,
+          });
+        }
       });
     },
     [commitUser]
@@ -435,19 +757,55 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     (id, delta) => {
       commitUser((userId, data) => {
         const currentItem = data.ledger.find((item) => item.id === id);
-        if (!currentItem) return;
-        const amount = Math.max(
-          ledgerPaid(currentItem),
-          Math.round((currentItem.amount + delta) * 100) / 100
+        if (!currentItem || isLedgerPayment(currentItem) || delta === 0) return;
+        const wasClosed = ledgerIsClosed(currentItem, data.ledger);
+        const paid = ledgerPaid(currentItem, data.ledger);
+        const amount = Math.max(paid, Math.round((currentItem.amount + delta) * 100) / 100);
+        const stamp = nowIso();
+        updateLedgerRow(
+          userId,
+          id,
+          {
+            ...currentItem,
+            amount,
+            settled: false,
+            updatedAt: stamp,
+          },
+          currentItem
         );
-        const paid = ledgerPaid(currentItem);
-        updateLedgerRow(userId, id, {
-          ...currentItem,
-          amount,
-          paid,
-          settled: paid >= amount,
-          updatedAt: nowIso(),
-        }, currentItem);
+        if (wasClosed && delta > 0 && currentItem.personId) {
+          insertLifecycleEvent(userId, {
+            personId: currentItem.personId,
+            kind: "apertura",
+            direction: currentItem.direction,
+            amount: Math.abs(delta),
+            ledgerId: currentItem.id,
+            notes: "Riapertura con aumento",
+            at: stamp,
+          });
+        }
+      });
+    },
+    [commitUser]
+  );
+
+  const extinguishLedger: StoreContextValue["extinguishLedger"] = useCallback(
+    (id) => {
+      commitUser((userId, data) => {
+        const currentItem = data.ledger.find((item) => item.id === id);
+        if (!currentItem || isLedgerPayment(currentItem)) return;
+        extinguishLedgerInDb(userId, currentItem, data.ledger);
+      });
+    },
+    [commitUser]
+  );
+
+  const reopenLedger: StoreContextValue["reopenLedger"] = useCallback(
+    (id) => {
+      commitUser((userId, data) => {
+        const currentItem = data.ledger.find((item) => item.id === id);
+        if (!currentItem || isLedgerPayment(currentItem)) return;
+        reopenLedgerInDb(userId, currentItem);
       });
     },
     [commitUser]
@@ -457,7 +815,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     (entry) => {
       const stamp = nowIso();
       const { person, ...rest } = entry;
-      const created: Expense = { ...rest, id: createId(), createdAt: stamp, updatedAt: stamp };
+      const created: Expense = {
+        ...rest,
+        completed: entry.completed ?? false,
+        id: createId(),
+        createdAt: stamp,
+        updatedAt: stamp,
+      };
       commitUser((userId) => insertExpense(userId, created, person));
       return created;
     },
@@ -560,13 +924,23 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [commitUser]
   );
 
+  const renamePerson: StoreContextValue["renamePerson"] = useCallback(
+    (id, name) => {
+      commitUser((userId) => {
+        renamePersonRow(userId, id, name);
+      });
+    },
+    [commitUser]
+  );
+
   const totals = useMemo(() => {
-    const openDebts = current.data.ledger
-      .filter((item) => item.direction === "debito" && !item.settled)
-      .reduce((sum, item) => sum + ledgerRemaining(item), 0);
-    const openCredits = current.data.ledger
-      .filter((item) => item.direction === "credito" && !item.settled)
-      .reduce((sum, item) => sum + ledgerRemaining(item), 0);
+    const principals = current.data.ledger.filter((item) => !isLedgerPayment(item));
+    const openDebts = principals
+      .filter((item) => item.direction === "debito" && !ledgerIsClosed(item, current.data.ledger))
+      .reduce((sum, item) => sum + ledgerRemaining(item, current.data.ledger), 0);
+    const openCredits = principals
+      .filter((item) => item.direction === "credito" && !ledgerIsClosed(item, current.data.ledger))
+      .reduce((sum, item) => sum + ledgerRemaining(item, current.data.ledger), 0);
     const piggyCurrent = current.data.piggyBanks.reduce((sum, item) => sum + item.current, 0);
     const piggyTarget = current.data.piggyBanks.reduce((sum, item) => sum + item.target, 0);
     const monthExpenses = current.data.expenses
@@ -594,7 +968,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     data: current.data,
     register,
     login,
+    loginWithPin,
     logout,
+    isPinLoginAvailable,
+    enablePin,
+    disablePin,
+    linkEmail,
+    unlinkEmail,
+    requestPasswordRecovery,
+    finishPasswordRecovery,
     exportDatabase,
     importDatabase,
     resetStorage,
@@ -603,6 +985,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     deleteLedger,
     adjustLedgerPaid,
     adjustLedgerTarget,
+    extinguishLedger,
+    reopenLedger,
+    isLedgerTitleAvailable,
     addExpense,
     updateExpense,
     deleteExpense,
@@ -613,6 +998,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     updatePiggy,
     deletePiggy,
     adjustPiggy,
+    renamePerson,
     totals,
   };
 

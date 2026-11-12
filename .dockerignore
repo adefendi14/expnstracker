@@ -1,0 +1,10 @@
+node_modules
+.next
+out
+.preview-root
+.git
+agent-tools
+*.tsbuildinfo
+.env*
+README.md
+deploy/README.md

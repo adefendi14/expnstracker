@@ -1,0 +1,16 @@
+{
+	# TLS terminator in front of an existing HTTP app (e.g. nginx :3003).
+	# Inside the container we listen on :443; map host HTTPS_PORT (default 3443) → 443.
+	email {$ACME_EMAIL:}
+}
+
+{$SITE_ADDRESS::443} {
+	encode zstd gzip
+	reverse_proxy {$UPSTREAM::host.docker.internal:3003}
+
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+	}
+}

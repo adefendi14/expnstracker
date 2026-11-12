@@ -1,4 +1,4 @@
-import { ledgerRemaining } from "@/lib/format";
+import { isLedgerPayment, ledgerIsClosed, ledgerRemaining } from "@/lib/format";
 import type { AppData, PersonEvent, PersonProfile } from "@/lib/types";
 
 export type PersonSummary = {
@@ -44,13 +44,15 @@ export function personInitials(name: string) {
 export function summarizePeople(data: AppData): PersonSummary[] {
   return data.people
     .map((person) => {
-      const ledger = data.ledger.filter((item) => item.personId === person.id);
+      const ledger = data.ledger.filter(
+        (item) => item.personId === person.id && !isLedgerPayment(item)
+      );
       const openCredits = ledger
-        .filter((item) => item.direction === "credito" && !item.settled)
-        .reduce((sum, item) => sum + ledgerRemaining(item), 0);
+        .filter((item) => item.direction === "credito" && !ledgerIsClosed(item, data.ledger))
+        .reduce((sum, item) => sum + ledgerRemaining(item, data.ledger), 0);
       const openDebts = ledger
-        .filter((item) => item.direction === "debito" && !item.settled)
-        .reduce((sum, item) => sum + ledgerRemaining(item), 0);
+        .filter((item) => item.direction === "debito" && !ledgerIsClosed(item, data.ledger))
+        .reduce((sum, item) => sum + ledgerRemaining(item, data.ledger), 0);
       const expenses = data.expenses.filter((item) => item.personId === person.id);
       const expensesTotal = expenses.reduce((sum, item) => sum + item.amount, 0);
       const stamps = [
@@ -104,10 +106,10 @@ export function residualSeries(events: PersonEvent[]): ResidualPoint[] {
     else if (event.kind === "obiettivo") {
       if (event.direction === "credito") credits += event.amount;
       else debts += event.amount;
-    } else if (event.kind === "versamento") {
+    } else if (event.kind === "versamento" || event.kind === "estinzione" || event.kind === "chiusura") {
       if (event.direction === "credito") credits = Math.max(0, credits - event.amount);
       else debts = Math.max(0, debts - event.amount);
-    } else if (event.kind === "storno") {
+    } else if (event.kind === "storno" || event.kind === "apertura") {
       if (event.direction === "credito") credits += event.amount;
       else debts += event.amount;
     }
@@ -165,6 +167,9 @@ export function eventLabel(kind: PersonEvent["kind"]) {
   if (kind === "versamento") return "Versamento";
   if (kind === "storno") return "Storno";
   if (kind === "spesa") return "Spesa";
+  if (kind === "apertura") return "Riapertura";
+  if (kind === "chiusura") return "Chiusura";
+  if (kind === "estinzione") return "Estinzione";
   return "Obiettivo";
 }
 

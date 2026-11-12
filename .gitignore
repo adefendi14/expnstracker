@@ -32,6 +32,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # vercel
 .vercel
@@ -40,3 +41,11 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 agent-tools/
+
+.preview-root/
+
+# generated at deploy/build time
+/DEPLOY_SHA.txt
+/public/DEPLOY_SHA.txt
+/public/BUILD_MARK.txt
+/BUILD_MARK.txt

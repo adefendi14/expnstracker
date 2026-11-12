@@ -1,0 +1,25 @@
+# HTTPS front for an app already on the host (ExpnsTracker at :3003).
+# Usage on the VPS:
+#   HTTPS_PORT=3443 UPSTREAM=host.docker.internal:3003 docker compose -f deploy/docker-compose.https-proxy.yml up -d
+# Then open https://<IP>:3443/  (browser may warn on self-signed cert without a domain).
+services:
+  expnstracker-https:
+    image: caddy:2.9-alpine
+    container_name: expnstracker-https
+    restart: unless-stopped
+    ports:
+      - "${HTTPS_PORT:-3443}:443"
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-:443}
+      ACME_EMAIL: ${ACME_EMAIL:-}
+      UPSTREAM: ${UPSTREAM:-host.docker.internal:3003}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./Caddyfile.https-proxy:/etc/caddy/Caddyfile:ro
+      - expnstracker_caddy_data:/data
+      - expnstracker_caddy_config:/config
+
+volumes:
+  expnstracker_caddy_data:
+  expnstracker_caddy_config:

@@ -2,18 +2,23 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { ArrowDownLeft, ArrowUpRight } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { AssociationPicker } from "@/components/association-picker";
 import { Field, FieldRow, NativeSelect } from "@/components/field";
+import { EnterReveal, FadeSwap } from "@/components/motion";
 import { PersonPicker } from "@/components/person-picker";
 import { SegmentedControl } from "@/components/segmented-control";
 import { useStore } from "@/lib/store";
+import { cn } from "@/lib/utils";
 import {
   CATEGORY_LABELS,
   PRIORITY_LABELS,
   RISK_LABELS,
+  normalizeLedgerTitle,
   parseEuroInput,
   todayIso,
 } from "@/lib/format";
@@ -32,12 +37,6 @@ import {
 } from "@/lib/types";
 
 type FormTab = "ledger" | "spesa" | "idea";
-
-const TAB_ITEMS = {
-  ledger: "Debito / Credito",
-  spesa: "Spesa",
-  idea: "Idea di investimento",
-};
 
 const inputClass = "h-12 rounded-2xl px-3.5";
 
@@ -65,10 +64,13 @@ export function QuickAddForm({
 
   const [tab, setTab] = useState<FormTab>(defaultTab);
   const [direction, setDirection] = useState<DebtDirection>(ledger?.direction ?? "debito");
+  const [ledgerTitle, setLedgerTitle] = useState(ledger?.title ?? "");
   const [person, setPerson] = useState(ledger?.person ?? "");
   const [ledgerAmount, setLedgerAmount] = useState(ledger ? String(ledger.amount).replace(".", ",") : "");
   const [dueDate, setDueDate] = useState(ledger?.dueDate ?? "");
   const [ledgerNotes, setLedgerNotes] = useState(ledger?.notes ?? "");
+  const [associateQuery, setAssociateQuery] = useState("");
+  const [associatedLedgerId, setAssociatedLedgerId] = useState(ledger?.associatedLedgerId);
 
   const [expenseAmount, setExpenseAmount] = useState(
     expense ? String(expense.amount).replace(".", ",") : ""
@@ -91,13 +93,20 @@ export function QuickAddForm({
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   function goBack() {
-    router.push(tab === "idea" ? "/elenco?tipo=idee" : tab === "spesa" ? "/elenco?tipo=spese" : "/elenco");
+    router.push(
+      tab === "idea" ? "/cronologia?tipo=idee" : tab === "spesa" ? "/cronologia?tipo=spese" : "/cronologia"
+    );
   }
 
   function handleSave() {
     const nextErrors: Record<string, string> = {};
 
     if (tab === "ledger") {
+      const title = normalizeLedgerTitle(ledgerTitle);
+      if (!title) nextErrors.ledgerTitle = "Inserisci un titolo univoco.";
+      else if (!store.isLedgerTitleAvailable(title, ledger?.id)) {
+        nextErrors.ledgerTitle = "Questo titolo esiste già.";
+      }
       if (!person.trim()) nextErrors.person = "Indica chi è coinvolto.";
       const amount = parseEuroInput(ledgerAmount);
       if (amount === null || amount === 0) nextErrors.ledgerAmount = "Inserisci un importo valido.";
@@ -105,19 +114,26 @@ export function QuickAddForm({
       if (Object.keys(nextErrors).length) return;
 
       const payload = {
+        title,
         direction,
         person: person.trim(),
         amount: amount!,
         dueDate: dueDate || undefined,
         notes: ledgerNotes.trim() || undefined,
+        associatedLedgerId: associatedLedgerId || undefined,
         settled: ledger?.settled ?? false,
       };
-      if (ledger) {
-        store.updateLedger(ledger.id, payload);
-        toast.success("Movimento aggiornato");
-      } else {
-        store.addLedger(payload);
-        toast.success(direction === "debito" ? "Debito salvato" : "Credito salvato");
+      try {
+        if (ledger) {
+          store.updateLedger(ledger.id, payload);
+          toast.success("Movimento aggiornato");
+        } else {
+          store.addLedger(payload);
+          toast.success(direction === "debito" ? "Debito salvato" : "Credito salvato");
+        }
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Salvataggio non riuscito");
+        return;
       }
       goBack();
       return;
@@ -182,85 +198,144 @@ export function QuickAddForm({
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-col gap-5 px-4 py-6 md:px-8">
-      <div>
-        <h1 className="text-3xl font-semibold tracking-tight">
-          {editing ? "Modifica" : "Aggiungi"}
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Un solo modulo per debiti, crediti, spese e idee di investimento.
-        </p>
-      </div>
+    <div className="mx-auto flex w-full max-w-2xl flex-col gap-4 px-4 py-5 md:gap-5 md:px-8 md:py-6">
+      {editing ? (
+        <EnterReveal skeletonClassName="rounded-2xl">
+          <h1 className="text-2xl font-semibold tracking-tight">Modifica</h1>
+        </EnterReveal>
+      ) : null}
 
-      <SegmentedControl
-        value={tab}
-        onChange={(next) => {
-          if (editing) return;
-          setTab(next);
-          setErrors({});
-        }}
-        disabled={editing}
-        options={[
-          { value: "ledger", label: "Debito/Credito" },
-          { value: "spesa", label: "Spesa" },
-          { value: "idea", label: "Idea" },
-        ]}
-      />
+      <EnterReveal skeletonClassName="rounded-2xl">
+        <SegmentedControl
+          value={tab}
+          onChange={(next) => {
+            if (editing) return;
+            setTab(next);
+            setErrors({});
+          }}
+          disabled={editing}
+          options={[
+            { value: "ledger", label: "Debito/Credito" },
+            { value: "spesa", label: "Spesa" },
+            { value: "idea", label: "Idea" },
+          ]}
+        />
+      </EnterReveal>
 
+      <EnterReveal delay={50} skeletonClassName="rounded-3xl">
+      <FadeSwap id={tab} tone="lift">
       {tab === "ledger" ? (
         <div className="flex flex-col gap-4">
-          <Field label="Tipo">
-            <NativeSelect
-              value={direction}
-              onChange={(event) => setDirection(event.target.value as DebtDirection)}
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setDirection("debito")}
+              className={cn(
+                "rounded-2xl px-3 py-3.5 text-left ring-1 transition-[background-color,box-shadow,color,transform] duration-200 active:scale-[0.98]",
+                direction === "debito"
+                  ? "bg-brand/40 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.2)] ring-brand/55 backdrop-blur-md"
+                  : "bg-muted/60 text-muted-foreground ring-foreground/8 hover:bg-muted"
+              )}
+              aria-pressed={direction === "debito"}
             >
-              <option value="debito">Debito (devo)</option>
-              <option value="credito">Credito (mi devono)</option>
-            </NativeSelect>
+              <span
+                className={cn(
+                  "mb-2 flex size-8 items-center justify-center rounded-full",
+                  direction === "debito" ? "bg-white/15 text-white" : "bg-brand-soft text-brand"
+                )}
+              >
+                <ArrowUpRight className="size-4" />
+              </span>
+              <p className="text-sm font-semibold">Debito</p>
+              <p className={cn("mt-0.5 text-xs", direction === "debito" ? "text-white/80" : "text-muted-foreground")}>
+                Devo io
+              </p>
+            </button>
+            <button
+              type="button"
+              onClick={() => setDirection("credito")}
+              className={cn(
+                "rounded-2xl px-3 py-3.5 text-left ring-1 transition-[background-color,box-shadow,color,transform] duration-200 active:scale-[0.98]",
+                direction === "credito"
+                  ? "bg-brand/40 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.2)] ring-brand/55 backdrop-blur-md"
+                  : "bg-muted/60 text-muted-foreground ring-foreground/8 hover:bg-muted"
+              )}
+              aria-pressed={direction === "credito"}
+            >
+              <span
+                className={cn(
+                  "mb-2 flex size-8 items-center justify-center rounded-full",
+                  direction === "credito" ? "bg-white/15 text-white" : "bg-brand-soft text-brand"
+                )}
+              >
+                <ArrowDownLeft className="size-4" />
+              </span>
+              <p className="text-sm font-semibold">Credito</p>
+              <p className={cn("mt-0.5 text-xs", direction === "credito" ? "text-white/80" : "text-muted-foreground")}>
+                Mi devono
+              </p>
+            </button>
+          </div>
+
+          <Field label="Titolo" htmlFor="ledger-title" error={errors.ledgerTitle}>
+            <Input
+              id="ledger-title"
+              value={ledgerTitle}
+              onChange={(event) => setLedgerTitle(event.target.value)}
+              placeholder="Es. Affitto marzo, Prestito auto…"
+              className={inputClass}
+              autoComplete="off"
+            />
           </Field>
-          <Field label="Chi" htmlFor="person" error={errors.person} hint="Scegli un profilo o scrivi un nome nuovo.">
+          <Field label="Chi" htmlFor="person" error={errors.person}>
             <PersonPicker
               id="person"
               value={person}
               onChange={setPerson}
               people={store.data.people}
-              placeholder="Marco, inquilino, banca…"
+              placeholder="Nome"
             />
           </Field>
-          <FieldRow>
-            <Field
-              label="Obiettivo"
-              htmlFor="ledger-amount"
-              error={errors.ledgerAmount}
-              hint="Poi versi dall’elenco, come un salvadanaio. Se cresce, alzi l’obiettivo."
-            >
-              <Input
-                id="ledger-amount"
-                inputMode="decimal"
-                autoComplete="off"
-                value={ledgerAmount}
-                onChange={(event) => setLedgerAmount(event.target.value)}
-                placeholder="0,00"
-                className={inputClass}
-              />
-            </Field>
-            <Field label="Scadenza" htmlFor="due-date" hint="Facoltativa">
-              <Input
-                id="due-date"
-                type="date"
-                value={dueDate}
-                onChange={(event) => setDueDate(event.target.value)}
-                className={inputClass}
-              />
-            </Field>
-          </FieldRow>
-          <Field label="Note" htmlFor="ledger-notes" hint="Facoltative">
+          <Field label="Quantità" htmlFor="ledger-amount" error={errors.ledgerAmount}>
+            <Input
+              id="ledger-amount"
+              inputMode="decimal"
+              autoComplete="off"
+              value={ledgerAmount}
+              onChange={(event) => setLedgerAmount(event.target.value)}
+              placeholder="0,00"
+              className={`${inputClass} w-[7.5rem] max-w-full tabular-nums`}
+            />
+          </Field>
+          <Field label="Associa a" htmlFor="associate">
+            <AssociationPicker
+              value={associateQuery}
+              selectedId={associatedLedgerId}
+              ledger={store.data.ledger}
+              people={store.data.people}
+              excludeId={ledger?.id}
+              onChange={({ query, associatedLedgerId: nextId }) => {
+                setAssociateQuery(query);
+                setAssociatedLedgerId(nextId);
+              }}
+            />
+          </Field>
+          <Field label="Scadenza" htmlFor="due-date">
+            <Input
+              id="due-date"
+              type="date"
+              value={dueDate}
+              onChange={(event) => setDueDate(event.target.value)}
+              className={inputClass}
+            />
+          </Field>
+          <Field label="Note" htmlFor="ledger-notes">
             <Textarea
               id="ledger-notes"
               value={ledgerNotes}
               onChange={(event) => setLedgerNotes(event.target.value)}
-              placeholder="Motivo, accordo, promemoria…"
-              className="min-h-24 rounded-2xl px-3.5"
+              placeholder="Opzionale"
+              className="min-h-20 rounded-2xl px-3.5"
             />
           </Field>
         </div>
@@ -302,16 +377,15 @@ export function QuickAddForm({
               />
             </Field>
           </FieldRow>
-          <Field label="Note" htmlFor="expense-notes" hint="Facoltative">
+          <Field label="Note" htmlFor="expense-notes">
             <Textarea
               id="expense-notes"
               value={expenseNotes}
               onChange={(event) => setExpenseNotes(event.target.value)}
-              placeholder="Spesa al supermercato, cena, bolletta…"
               className="min-h-24 rounded-2xl px-3.5"
             />
           </Field>
-          <Field label="Chi" htmlFor="expense-person" hint="Facoltativo. Collega la spesa a un profilo.">
+          <Field label="Chi" htmlFor="expense-person">
             <PersonPicker
               id="expense-person"
               value={expensePerson}
@@ -326,12 +400,12 @@ export function QuickAddForm({
 
       {tab === "idea" ? (
         <div className="flex flex-col gap-4">
-          <Field label="Titolo o strumento" htmlFor="idea-title" error={errors.title}>
+          <Field label="Titolo" htmlFor="idea-title" error={errors.title}>
             <Input
               id="idea-title"
               value={title}
               onChange={(event) => setTitle(event.target.value)}
-              placeholder="ETF mondiale, BTP, oro…"
+              placeholder="Titolo"
               className={inputClass}
             />
           </Field>
@@ -380,16 +454,15 @@ export function QuickAddForm({
               </NativeSelect>
             </Field>
           </FieldRow>
-          <Field label="Note" htmlFor="idea-notes" hint="Facoltative">
+          <Field label="Note" htmlFor="idea-notes">
             <Textarea
               id="idea-notes"
               value={ideaNotes}
               onChange={(event) => setIdeaNotes(event.target.value)}
-              placeholder="Tesi, orizzonte, perché ti interessa…"
               className="min-h-24 rounded-2xl px-3.5"
             />
           </Field>
-          <Field label="Link" htmlFor="idea-link" hint="Facoltativo" error={errors.link}>
+          <Field label="Link" htmlFor="idea-link" error={errors.link}>
             <Input
               id="idea-link"
               type="url"
@@ -401,25 +474,28 @@ export function QuickAddForm({
           </Field>
         </div>
       ) : null}
+      </FadeSwap>
+      </EnterReveal>
 
-      <div className="flex flex-col gap-2 pt-2 sm:flex-row">
-        <button
-          type="button"
-          className="inline-flex h-12 flex-1 items-center justify-center rounded-2xl bg-primary px-4 text-base font-medium text-primary-foreground"
-          onClick={handleSave}
-        >
-          {editing ? "Salva modifiche" : "Salva"}
-        </button>
-        <Button
-          type="button"
-          variant="outline"
-          className="h-12 flex-1 rounded-2xl text-base"
-          onClick={() => router.push("/")}
-        >
-          Annulla
-        </Button>
-      </div>
-      <p className="text-center text-xs text-muted-foreground">{TAB_ITEMS[tab]} · valuta in euro</p>
+      <EnterReveal delay={90} skeletonClassName="rounded-2xl">
+        <div className="flex flex-row justify-center gap-2 pt-1">
+          <button
+            type="button"
+            className="inline-flex h-14 w-[min(100%,9.5rem)] items-center justify-center rounded-2xl bg-brand-strong px-4 text-sm font-semibold text-brand-foreground transition-transform active:scale-[0.98] sm:h-12 sm:w-auto sm:min-w-[8.5rem] sm:flex-1 sm:text-base sm:font-medium"
+            onClick={handleSave}
+          >
+            Salva
+          </button>
+          <Button
+            type="button"
+            variant="outline"
+            className="h-14 w-[min(100%,9.5rem)] rounded-2xl text-sm font-semibold sm:h-12 sm:w-auto sm:min-w-[8.5rem] sm:flex-1 sm:text-base sm:font-medium"
+            onClick={() => router.push("/")}
+          >
+            Annulla
+          </Button>
+        </div>
+      </EnterReveal>
     </div>
   );
 }

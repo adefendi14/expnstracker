@@ -1,4 +1,3 @@
-import { createId } from "@/lib/id";
 import type {
   AmountKind,
   AppData,
@@ -15,9 +14,17 @@ import type {
   Risk,
   UserAccount,
 } from "@/lib/types";
-import { ledgerPaid } from "@/lib/format";
+import { ledgerPaid, ledgerTitleKey, normalizeLedgerTitle } from "@/lib/format";
 import { normalizePersonKey, normalizePersonName } from "@/lib/people";
-import { queryOneSql, querySql, runSql } from "@/lib/sqlite";
+import {
+  queryDirectoryOneSql,
+  queryDirectorySql,
+  queryOneSql,
+  querySql,
+  runDirectorySql,
+  runSql,
+} from "@/lib/sqlite";
+import { newUuid } from "@/lib/uuid";
 
 type UserRow = {
   id: string;
@@ -26,10 +33,17 @@ type UserRow = {
   password_salt: string;
   password_hash: string;
   created_at: string;
+  email?: string | null;
+  pin_enabled?: number | null;
+  pin_salt?: string | null;
+  pin_hash?: string | null;
+  recovery_secret_blob?: string | null;
+  recovery_kek_salt?: string | null;
 };
 
 type LedgerRow = {
   id: string;
+  title?: string | null;
   direction: DebtDirection;
   person: string;
   person_id: string | null;
@@ -38,6 +52,8 @@ type LedgerRow = {
   due_date: string | null;
   notes: string | null;
   settled: number;
+  related_ledger_id?: string | null;
+  associated_ledger_id?: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -49,6 +65,7 @@ type ExpenseRow = {
   date: string;
   notes: string | null;
   person_id: string | null;
+  completed?: number | null;
   created_at: string;
   updated_at: string;
 };
@@ -97,6 +114,10 @@ type EventRow = {
   created_at: string;
 };
 
+function newId() {
+  return newUuid();
+}
+
 function asPerson(row: PersonRow): PersonProfile {
   return {
     id: row.id,
@@ -133,12 +154,41 @@ export function ensurePerson(userId: string, rawName: string): PersonProfile {
   );
   if (existing) return asPerson(existing);
   const stamp = new Date().toISOString();
-  const person: PersonProfile = { id: createId(), name, createdAt: stamp, updatedAt: stamp };
+  const person: PersonProfile = { id: newId(), name, createdAt: stamp, updatedAt: stamp };
   runSql(
     "INSERT INTO people (id, user_id, name, name_key, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
     [person.id, userId, person.name, key, person.createdAt, person.updatedAt]
   );
   return person;
+}
+
+export function renamePerson(userId: string, personId: string, rawName: string): PersonProfile {
+  const name = normalizePersonName(rawName);
+  const key = normalizePersonKey(name);
+  if (!key) {
+    throw new Error("Inserisci un nome.");
+  }
+  const current = queryOneSql<PersonRow>(
+    "SELECT id, name, created_at, updated_at FROM people WHERE user_id = ? AND id = ?",
+    [userId, personId]
+  );
+  if (!current) {
+    throw new Error("Persona non trovata.");
+  }
+  const conflict = queryOneSql<PersonRow>(
+    "SELECT id, name, created_at, updated_at FROM people WHERE user_id = ? AND name_key = ? AND id != ?",
+    [userId, key, personId]
+  );
+  if (conflict) {
+    throw new Error("Esiste già una persona con questo nome.");
+  }
+  const stamp = new Date().toISOString();
+  runSql(
+    "UPDATE people SET name = ?, name_key = ?, updated_at = ? WHERE user_id = ? AND id = ?",
+    [name, key, stamp, userId, personId]
+  );
+  runSql("UPDATE ledger SET person = ? WHERE user_id = ? AND person_id = ?", [name, userId, personId]);
+  return { id: personId, name, createdAt: current.created_at, updatedAt: stamp };
 }
 
 function insertPersonEvent(userId: string, event: Omit<PersonEvent, "id" | "createdAt"> & { id?: string; createdAt?: string }) {
@@ -148,7 +198,7 @@ function insertPersonEvent(userId: string, event: Omit<PersonEvent, "id" | "crea
       (id, user_id, person_id, kind, direction, amount, ledger_id, expense_id, notes, occurred_at, created_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
-      event.id ?? createId(),
+      event.id ?? newId(),
       userId,
       event.personId,
       event.kind,
@@ -163,31 +213,74 @@ function insertPersonEvent(userId: string, event: Omit<PersonEvent, "id" | "crea
   );
 }
 
+export function insertLifecycleEvent(
+  userId: string,
+  event: {
+    personId: string;
+    kind: Extract<PersonEventKind, "apertura" | "chiusura" | "estinzione">;
+    direction: DebtDirection;
+    amount: number;
+    ledgerId: string;
+    notes?: string;
+    at: string;
+  }
+) {
+  insertPersonEvent(userId, {
+    personId: event.personId,
+    kind: event.kind,
+    direction: event.direction,
+    amount: event.amount,
+    ledgerId: event.ledgerId,
+    notes: event.notes,
+    occurredAt: event.at,
+    createdAt: event.at,
+  });
+}
+
 function asAccount(row: UserRow): UserAccount {
+  const email = row.email?.trim() || undefined;
   return {
     id: row.id,
     name: row.name,
     username: row.username,
+    email,
+    pinEnabled: Number(row.pin_enabled ?? 0) === 1,
+    recoveryEnabled: Boolean(email && row.recovery_secret_blob && row.recovery_kek_salt),
     createdAt: row.created_at,
   };
 }
 
 export function countUsers() {
-  const row = queryOneSql<{ total: number }>("SELECT COUNT(*) AS total FROM users");
+  const row = queryDirectoryOneSql<{ total: number }>("SELECT COUNT(*) AS total FROM users");
   return Number(row?.total ?? 0);
 }
 
 export function listUsers() {
-  return querySql<UserRow>("SELECT * FROM users ORDER BY created_at ASC").map(asAccount);
+  return queryDirectorySql<UserRow>("SELECT * FROM users ORDER BY created_at ASC").map(asAccount);
 }
 
 export function findUserById(id: string) {
-  const row = queryOneSql<UserRow>("SELECT * FROM users WHERE id = ?", [id]);
+  const row = queryDirectoryOneSql<UserRow>("SELECT * FROM users WHERE id = ?", [id]);
   return row ? asAccount(row) : undefined;
 }
 
 export function findUserAuth(username: string) {
-  return queryOneSql<UserRow>("SELECT * FROM users WHERE username = ? COLLATE NOCASE", [username]);
+  return queryDirectoryOneSql<UserRow>(
+    "SELECT * FROM users WHERE username = ? COLLATE NOCASE",
+    [username]
+  );
+}
+
+export function findUserByEmail(email: string) {
+  return queryDirectoryOneSql<UserRow>(
+    "SELECT * FROM users WHERE email = ? COLLATE NOCASE",
+    [email]
+  );
+}
+
+export function isPinEnabledForUsername(username: string) {
+  const row = findUserAuth(username);
+  return Boolean(row && Number(row.pin_enabled ?? 0) === 1);
 }
 
 export function insertUser(user: {
@@ -198,7 +291,7 @@ export function insertUser(user: {
   passwordHash: string;
   createdAt: string;
 }) {
-  runSql(
+  runDirectorySql(
     "INSERT INTO users (id, name, username, password_salt, password_hash, created_at) VALUES (?, ?, ?, ?, ?, ?)",
     [user.id, user.name, user.username, user.passwordSalt, user.passwordHash, user.createdAt]
   );
@@ -211,6 +304,9 @@ export function loadUserData(userId: string): AppData {
   ).map(
     (row): LedgerEntry => ({
       id: row.id,
+      title:
+        (row.title && String(row.title).trim()) ||
+        `${row.person} · ${row.direction === "credito" ? "Credito" : "Debito"}`,
       direction: row.direction,
       person: row.person,
       personId: row.person_id ?? undefined,
@@ -219,6 +315,8 @@ export function loadUserData(userId: string): AppData {
       dueDate: row.due_date ?? undefined,
       notes: row.notes ?? undefined,
       settled: Boolean(row.settled),
+      relatedLedgerId: row.related_ledger_id ?? undefined,
+      associatedLedgerId: row.associated_ledger_id ?? undefined,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     })
@@ -234,6 +332,7 @@ export function loadUserData(userId: string): AppData {
       date: row.date,
       notes: row.notes ?? undefined,
       personId: row.person_id ?? undefined,
+      completed: Boolean(row.completed),
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     })
@@ -296,14 +395,28 @@ export function insertLegacyData(userId: string, data: AppData) {
   }
 }
 
+export function isLedgerTitleTaken(userId: string, title: string, exceptId?: string) {
+  const key = ledgerTitleKey(title);
+  if (!key) return false;
+  const rows = querySql<{ id: string; title: string }>(
+    "SELECT id, title FROM ledger WHERE user_id = ? AND related_ledger_id IS NULL",
+    [userId]
+  );
+  return rows.some(
+    (row) => row.id !== exceptId && ledgerTitleKey(row.title || "") === key
+  );
+}
+
 export function insertLedger(userId: string, item: LedgerEntry) {
   const person = ensurePerson(userId, item.person);
+  const title = normalizeLedgerTitle(item.title) || `${person.name} · ${item.direction === "credito" ? "Credito" : "Debito"}`;
   runSql(
-    `INSERT INTO ledger (id, user_id, direction, person, person_id, amount, paid, due_date, notes, settled, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO ledger (id, user_id, title, direction, person, person_id, amount, paid, due_date, notes, settled, related_ledger_id, associated_ledger_id, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       item.id,
       userId,
+      title,
       item.direction,
       person.name,
       person.id,
@@ -312,10 +425,45 @@ export function insertLedger(userId: string, item: LedgerEntry) {
       item.dueDate ?? null,
       item.notes ?? null,
       item.settled ? 1 : 0,
+      item.relatedLedgerId ?? null,
+      item.associatedLedgerId ?? null,
       item.createdAt,
       item.updatedAt,
     ]
   );
+
+  if (item.relatedLedgerId) {
+    const kind =
+      item.notes === "Estinzione"
+        ? "estinzione"
+        : item.amount < 0
+          ? "storno"
+          : "versamento";
+    insertPersonEvent(userId, {
+      personId: person.id,
+      kind,
+      direction: item.direction,
+      amount: Math.abs(item.amount),
+      ledgerId: item.id,
+      notes: item.notes,
+      occurredAt: item.createdAt,
+      createdAt: item.createdAt,
+    });
+    if (kind === "estinzione") {
+      insertPersonEvent(userId, {
+        personId: person.id,
+        kind: "chiusura",
+        direction: item.direction,
+        amount: Math.abs(item.amount),
+        ledgerId: item.relatedLedgerId,
+        notes: "Chiusura",
+        occurredAt: item.createdAt,
+        createdAt: item.createdAt,
+      });
+    }
+    return;
+  }
+
   insertPersonEvent(userId, {
     personId: person.id,
     kind: item.direction,
@@ -342,10 +490,12 @@ export function insertLedger(userId: string, item: LedgerEntry) {
 
 export function updateLedgerRow(userId: string, id: string, item: LedgerEntry, previous?: LedgerEntry) {
   const person = ensurePerson(userId, item.person);
+  const title = normalizeLedgerTitle(item.title) || `${person.name} · ${item.direction === "credito" ? "Credito" : "Debito"}`;
   runSql(
-    `UPDATE ledger SET direction = ?, person = ?, person_id = ?, amount = ?, paid = ?, due_date = ?, notes = ?, settled = ?, updated_at = ?
+    `UPDATE ledger SET title = ?, direction = ?, person = ?, person_id = ?, amount = ?, paid = ?, due_date = ?, notes = ?, settled = ?, related_ledger_id = ?, associated_ledger_id = ?, updated_at = ?
      WHERE id = ? AND user_id = ?`,
     [
+      title,
       item.direction,
       person.name,
       person.id,
@@ -354,6 +504,8 @@ export function updateLedgerRow(userId: string, id: string, item: LedgerEntry, p
       item.dueDate ?? null,
       item.notes ?? null,
       item.settled ? 1 : 0,
+      item.relatedLedgerId ?? null,
+      item.associatedLedgerId ?? null,
       item.updatedAt,
       id,
       userId,
@@ -404,16 +556,35 @@ export function updateLedgerRow(userId: string, id: string, item: LedgerEntry, p
 }
 
 export function deleteLedgerRow(userId: string, id: string) {
+  const children = querySql<{ id: string }>(
+    "SELECT id FROM ledger WHERE related_ledger_id = ? AND user_id = ?",
+    [id, userId]
+  );
+  for (const child of children) {
+    runSql("DELETE FROM person_events WHERE ledger_id = ? AND user_id = ?", [child.id, userId]);
+    runSql("DELETE FROM ledger WHERE id = ? AND user_id = ?", [child.id, userId]);
+  }
   runSql("DELETE FROM person_events WHERE ledger_id = ? AND user_id = ?", [id, userId]);
   runSql("DELETE FROM ledger WHERE id = ? AND user_id = ?", [id, userId]);
+}
+
+export function deleteRelatedLedgerRows(userId: string, parentId: string) {
+  const children = querySql<{ id: string }>(
+    "SELECT id FROM ledger WHERE related_ledger_id = ? AND user_id = ?",
+    [parentId, userId]
+  );
+  for (const child of children) {
+    runSql("DELETE FROM person_events WHERE ledger_id = ? AND user_id = ?", [child.id, userId]);
+    runSql("DELETE FROM ledger WHERE id = ? AND user_id = ?", [child.id, userId]);
+  }
 }
 
 export function insertExpense(userId: string, item: Expense, personName?: string) {
   const person = personName?.trim() ? ensurePerson(userId, personName) : undefined;
   const personId = person?.id ?? item.personId ?? null;
   runSql(
-    `INSERT INTO expenses (id, user_id, amount, category, date, notes, person_id, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO expenses (id, user_id, amount, category, date, notes, person_id, completed, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       item.id,
       userId,
@@ -422,6 +593,7 @@ export function insertExpense(userId: string, item: Expense, personName?: string
       item.date,
       item.notes ?? null,
       personId,
+      item.completed ? 1 : 0,
       item.createdAt,
       item.updatedAt,
     ]
@@ -443,9 +615,19 @@ export function updateExpenseRow(userId: string, id: string, item: Expense, pers
   const person = personName?.trim() ? ensurePerson(userId, personName) : undefined;
   const personId = personName !== undefined ? (person?.id ?? null) : (item.personId ?? null);
   runSql(
-    `UPDATE expenses SET amount = ?, category = ?, date = ?, notes = ?, person_id = ?, updated_at = ?
+    `UPDATE expenses SET amount = ?, category = ?, date = ?, notes = ?, person_id = ?, completed = ?, updated_at = ?
      WHERE id = ? AND user_id = ?`,
-    [item.amount, item.category, item.date, item.notes ?? null, personId, item.updatedAt, id, userId]
+    [
+      item.amount,
+      item.category,
+      item.date,
+      item.notes ?? null,
+      personId,
+      item.completed ? 1 : 0,
+      item.updatedAt,
+      id,
+      userId,
+    ]
   );
   runSql("DELETE FROM person_events WHERE expense_id = ? AND user_id = ?", [id, userId]);
   if (personId) {

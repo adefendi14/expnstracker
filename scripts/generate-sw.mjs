@@ -9,8 +9,10 @@ const outDir = join(root, "out");
 const SHELL = [
   "./",
   "./index.html",
-  "./elenco/",
-  "./elenco/index.html",
+  "./cronologia/",
+  "./cronologia/index.html",
+  "./cronologia/movimento/",
+  "./cronologia/movimento/index.html",
   "./salvadanai/",
   "./salvadanai/index.html",
           "./aggiungi/",
@@ -130,6 +132,17 @@ function isPageRequest(request) {
   return accept.includes("text/html");
 }
 
+/** Soft navigations + hashed bundles must not be served stale from cache-first. */
+function preferNetwork(request) {
+  if (isPageRequest(request)) return true;
+  const path = new URL(request.url).pathname;
+  if (path.includes("/_next/")) return true;
+  if (path.includes("/__next")) return true;
+  if (path.endsWith(".txt")) return true;
+  if (path.endsWith(".js") || path.endsWith(".css")) return true;
+  return false;
+}
+
 async function lookup(request) {
   const url = new URL(request.url);
   const base = url.origin + url.pathname.replace(/\\/+$/, "") ;
@@ -172,6 +185,19 @@ async function offlinePage() {
 }
 
 async function handleRequest(request) {
+  if (preferNetwork(request)) {
+    try {
+      const response = await fetch(request);
+      await store(request, response);
+      return response;
+    } catch {
+      const hit = await lookup(request);
+      if (hit) return hit;
+      if (isPageRequest(request)) return offlinePage();
+      return new Response("", { status: 503, statusText: "Offline" });
+    }
+  }
+
   const hit = await lookup(request);
   if (hit) return hit;
 

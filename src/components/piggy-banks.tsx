@@ -24,8 +24,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Field } from "@/components/field";
 import { EmptyState } from "@/components/empty-state";
+import { EnterReveal, StaggerItem } from "@/components/motion";
+import { PrivacyAmount } from "@/components/privacy-amount";
 import { useStore } from "@/lib/store";
-import { formatEuro, formatEuroCompact, parseEuroInput } from "@/lib/format";
+import { formatEuroCompact, parseEuroInput } from "@/lib/format";
 import type { PiggyBank as PiggyBankType } from "@/lib/types";
 
 const inputClass = "h-12 rounded-2xl px-3.5";
@@ -82,15 +84,13 @@ export function PiggyFundsDialog({
           <DialogHeader>
             <DialogTitle>{mode === "add" ? "Aggiungi fondi" : "Preleva fondi"}</DialogTitle>
             <DialogDescription>
-              {mode === "add"
-                ? `Versa nel salvadanaio «${piggy.name}». Ora ci sono ${formatEuroCompact(piggy.current)}.`
-                : `Togli soldi da «${piggy.name}». Disponibili ${formatEuroCompact(piggy.current)}.`}
+              {piggy.name} · <PrivacyAmount>{formatEuroCompact(piggy.current)}</PrivacyAmount>
             </DialogDescription>
           </DialogHeader>
           <div className="grid grid-cols-2 gap-2">
             <Button
               type="button"
-              variant={mode === "add" ? "default" : "outline"}
+              variant={mode === "add" ? "brand" : "outline"}
               className="h-11 rounded-2xl"
               onClick={() => setMode("add")}
             >
@@ -98,7 +98,7 @@ export function PiggyFundsDialog({
             </Button>
             <Button
               type="button"
-              variant={mode === "remove" ? "default" : "outline"}
+              variant={mode === "remove" ? "brand" : "outline"}
               className="h-11 rounded-2xl"
               onClick={() => setMode("remove")}
             >
@@ -117,7 +117,7 @@ export function PiggyFundsDialog({
           <DialogFooter>
             <button
               type="submit"
-              className="inline-flex h-11 items-center justify-center rounded-2xl bg-primary px-4 text-sm font-medium text-primary-foreground"
+              className="inline-flex h-11 items-center justify-center rounded-2xl bg-brand-strong px-4 text-sm font-medium text-brand-foreground"
             >
               Conferma
             </button>
@@ -166,7 +166,9 @@ export function PiggyBankCard({ piggy }: { piggy: PiggyBankType }) {
         <div>
           <h2 className="text-base font-medium tracking-tight">{piggy.name}</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            {formatEuroCompact(piggy.current)} / {formatEuroCompact(piggy.target)} — {value}%
+            <PrivacyAmount>
+              {formatEuroCompact(piggy.current)} / {formatEuroCompact(piggy.target)} — {value}%
+            </PrivacyAmount>
           </p>
         </div>
         <DropdownMenu>
@@ -198,7 +200,11 @@ export function PiggyBankCard({ piggy }: { piggy: PiggyBankType }) {
         <p className="mt-2 text-xs font-medium text-emerald-700">Obiettivo raggiunto</p>
       ) : null}
       {piggy.notes ? <p className="mt-3 text-sm text-muted-foreground">{piggy.notes}</p> : null}
-      <Button className="mt-4 h-11 w-full rounded-2xl" variant="secondary" onClick={() => setFundsOpen(true)}>
+      <Button
+        className="mt-4 h-11 w-full rounded-2xl bg-brand-soft text-brand-soft-foreground hover:bg-brand-soft/80"
+        variant="secondary"
+        onClick={() => setFundsOpen(true)}
+      >
         Aggiungi fondi
       </Button>
 
@@ -208,8 +214,8 @@ export function PiggyBankCard({ piggy }: { piggy: PiggyBankType }) {
         <DialogContent className="rounded-3xl sm:max-w-md">
           <form onSubmit={submitEdit} className="flex flex-col gap-4">
             <DialogHeader>
-              <DialogTitle>Modifica obiettivo</DialogTitle>
-              <DialogDescription>Aggiorna nome, target e note.</DialogDescription>
+              <DialogTitle>Modifica</DialogTitle>
+              <DialogDescription>{piggy.name}</DialogDescription>
             </DialogHeader>
             <Field label="Nome">
               <Input name="name" defaultValue={piggy.name} className={inputClass} autoComplete="off" />
@@ -229,7 +235,7 @@ export function PiggyBankCard({ piggy }: { piggy: PiggyBankType }) {
             <DialogFooter>
               <button
                 type="submit"
-                className="inline-flex h-11 items-center justify-center rounded-2xl bg-primary px-4 text-sm font-medium text-primary-foreground"
+                className="inline-flex h-11 items-center justify-center rounded-2xl bg-brand-strong px-4 text-sm font-medium text-brand-foreground"
               >
                 Salva
               </button>
@@ -280,7 +286,7 @@ export function CreatePiggyButton() {
 
   return (
     <>
-      <Button className="h-12 rounded-2xl" onClick={() => setOpen(true)}>
+      <Button variant="brand" className="h-12 rounded-2xl" onClick={() => setOpen(true)}>
         Nuovo obiettivo
       </Button>
       <Dialog
@@ -294,12 +300,12 @@ export function CreatePiggyButton() {
           <form onSubmit={submit} className="flex flex-col gap-4">
             <DialogHeader>
               <DialogTitle>Nuovo salvadanaio</DialogTitle>
-              <DialogDescription>Crea un obiettivo con un target in euro.</DialogDescription>
+              <DialogDescription>Obiettivo in euro</DialogDescription>
             </DialogHeader>
             <Field label="Nome">
               <Input
                 name="name"
-                placeholder="Viaggio, fondo emergenza…"
+                placeholder="Nome"
                 className={inputClass}
                 autoComplete="off"
               />
@@ -313,7 +319,7 @@ export function CreatePiggyButton() {
                 className={inputClass}
               />
             </Field>
-            <Field label="Già messo da parte" hint="Facoltativo">
+            <Field label="Già messo">
               <Input
                 name="current"
                 inputMode="decimal"
@@ -322,13 +328,13 @@ export function CreatePiggyButton() {
                 className={inputClass}
               />
             </Field>
-            <Field label="Note" hint="Facoltative">
+            <Field label="Note">
               <Textarea name="notes" className="min-h-20 rounded-2xl" />
             </Field>
             <DialogFooter>
               <button
                 type="submit"
-                className="inline-flex h-11 items-center justify-center rounded-2xl bg-primary px-4 text-sm font-medium text-primary-foreground"
+                className="inline-flex h-11 items-center justify-center rounded-2xl bg-brand-strong px-4 text-sm font-medium text-brand-foreground"
               >
                 Crea
               </button>
@@ -341,34 +347,24 @@ export function CreatePiggyButton() {
 }
 
 export function DashboardPiggySection() {
-  const { data, totals } = useStore();
+  const { data } = useStore();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selected = data.piggyBanks.find((piggy) => piggy.id === selectedId) ?? null;
+  const hasPiggies = data.piggyBanks.length > 0;
 
   return (
     <article className="rounded-3xl bg-card p-5 ring-1 ring-foreground/8">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-sm font-medium">Salvadanai</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {data.piggyBanks.length === 0
-              ? "Nessun obiettivo ancora"
-              : `${formatEuroCompact(totals.piggyCurrent)} / ${formatEuroCompact(totals.piggyTarget)} — ${totals.piggyPercent}%`}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Link href="/salvadanai" className="text-xs font-medium text-muted-foreground hover:text-foreground">
-            Gestisci
-          </Link>
-          <PiggyBank className="size-4 text-amber-700" />
-        </div>
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm font-medium text-brand">Salvadanai</p>
+        <Link
+          href="/salvadanai"
+          className="inline-flex h-9 shrink-0 items-center rounded-full bg-brand-soft px-3 text-xs font-medium text-brand-soft-foreground transition-colors hover:bg-brand-soft/80"
+        >
+          Tutti
+        </Link>
       </div>
 
-      {data.piggyBanks.length === 0 ? (
-        <p className="mt-4 text-sm text-muted-foreground">
-          Crea un obiettivo nella pagina Salvadanai, poi torna qui per versare o prelevare con un tocco.
-        </p>
-      ) : (
+      {hasPiggies ? (
         <ul className="mt-4 flex flex-col gap-2">
           {data.piggyBanks.map((piggy) => {
             const value = percent(piggy.current, piggy.target);
@@ -377,27 +373,25 @@ export function DashboardPiggySection() {
                 <button
                   type="button"
                   onClick={() => setSelectedId(piggy.id)}
-                  className="w-full rounded-2xl bg-muted/50 px-4 py-3 text-left ring-1 ring-transparent transition hover:bg-muted hover:ring-foreground/8"
+                  className="w-full rounded-2xl bg-muted/50 px-4 py-3 text-left ring-1 ring-transparent transition hover:bg-muted hover:ring-foreground/8 active:scale-[0.99]"
                 >
-                  <div className="flex items-baseline justify-between gap-3">
+                  <div className="min-w-0">
                     <p className="truncate text-sm font-medium">{piggy.name}</p>
-                    <p className="shrink-0 text-xs text-muted-foreground">{value}%</p>
+                    <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">
+                      <PrivacyAmount>
+                        {`${formatEuroCompact(piggy.current)} / ${formatEuroCompact(piggy.target)} · ${value}%`}
+                      </PrivacyAmount>
+                    </p>
                   </div>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    {formatEuroCompact(piggy.current)} / {formatEuroCompact(piggy.target)}
-                  </p>
                   <Progress value={value} className="mt-2">
                     <span className="sr-only">Progresso {value} percento</span>
                   </Progress>
-                  <p className="mt-2 text-[11px] text-muted-foreground">Tocca per aggiungere o togliere soldi</p>
                 </button>
               </li>
             );
           })}
         </ul>
-      )}
-
-      <p className="mt-3 text-xs text-muted-foreground">Spese di questo mese: {formatEuro(totals.monthExpenses)}</p>
+      ) : null}
 
       {selected ? (
         <PiggyFundsDialog piggy={selected} open onOpenChange={(open) => !open && setSelectedId(null)} />
@@ -411,23 +405,24 @@ export function PiggyBankScreen() {
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-5 px-4 py-6 md:px-8">
-      <div className="flex items-end justify-between gap-3">
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight">Salvadanai</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Obiettivi in euro, progresso minimo.</p>
+      <EnterReveal skeletonClassName="rounded-2xl">
+        <div className="flex items-end justify-between gap-3">
+          <div>
+            <h1 className="text-3xl font-semibold tracking-tight">Salvadanai</h1>
+          </div>
+          <CreatePiggyButton />
         </div>
-        <CreatePiggyButton />
-      </div>
+      </EnterReveal>
       {data.piggyBanks.length === 0 ? (
-        <EmptyState
-          icon={<PiggyBank className="size-5" />}
-          title="Nessun obiettivo"
-          description="Crea un salvadanaio, ad esempio 1.000€ per un viaggio, e aggiungi i fondi man mano."
-        />
+        <EnterReveal delay={60}>
+          <EmptyState icon={<PiggyBank className="size-5" />} title="Nessun obiettivo" />
+        </EnterReveal>
       ) : (
         <div className="flex flex-col gap-3">
-          {data.piggyBanks.map((piggy) => (
-            <PiggyBankCard key={piggy.id} piggy={piggy} />
+          {data.piggyBanks.map((piggy, index) => (
+            <StaggerItem key={piggy.id} index={index} skeletonClassName="rounded-3xl">
+              <PiggyBankCard piggy={piggy} />
+            </StaggerItem>
           ))}
         </div>
       )}

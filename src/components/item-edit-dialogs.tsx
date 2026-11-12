@@ -37,7 +37,7 @@ function saveButton() {
   return (
     <button
       type="submit"
-      className="inline-flex h-11 items-center justify-center rounded-2xl bg-primary px-4 text-sm font-medium text-primary-foreground"
+      className="inline-flex h-11 items-center justify-center rounded-2xl bg-brand-strong px-4 text-sm font-medium text-brand-foreground"
     >
       Salva
     </button>
@@ -57,14 +57,24 @@ export function LedgerEditDialog({
   const live = store.data.ledger.find((entry) => entry.id === item.id) ?? item;
   const [direction, setDirection] = useState<DebtDirection>(live.direction);
   const [person, setPerson] = useState(live.person);
+  const [title, setTitle] = useState(live.title);
   const [error, setError] = useState("");
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
+    const nextTitle = title.trim();
     const nextPerson = person.trim();
     const dueDate = String(data.get("dueDate") ?? "").trim();
     const notes = String(data.get("notes") ?? "").trim();
+    if (!nextTitle) {
+      setError("Inserisci un titolo univoco.");
+      return;
+    }
+    if (!store.isLedgerTitleAvailable(nextTitle, live.id)) {
+      setError("Questo titolo esiste già.");
+      return;
+    }
     if (!nextPerson) {
       setError("Indica chi è coinvolto.");
       return;
@@ -74,16 +84,19 @@ export function LedgerEditDialog({
       setError("Inserisci un obiettivo in euro.");
       return;
     }
-    const paid = Math.min(ledgerPaid(live), amount);
-    store.updateLedger(live.id, {
-      direction,
-      person: nextPerson,
-      amount,
-      paid,
-      dueDate: dueDate || undefined,
-      notes: notes || undefined,
-      settled: paid >= amount,
-    });
+    try {
+      store.updateLedger(live.id, {
+        title: nextTitle,
+        direction,
+        person: nextPerson,
+        amount: Math.max(amount, ledgerPaid(live, store.data.ledger)),
+        dueDate: dueDate || undefined,
+        notes: notes || undefined,
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Aggiornamento non riuscito");
+      return;
+    }
     toast.success("Movimento aggiornato");
     setError("");
     onOpenChange(false);
@@ -98,6 +111,7 @@ export function LedgerEditDialog({
           setError("");
           setDirection(live.direction);
           setPerson(live.person);
+          setTitle(live.title);
         }
       }}
     >
@@ -105,7 +119,7 @@ export function LedgerEditDialog({
         <form key={open ? live.id : "closed"} onSubmit={submit} className="flex flex-col gap-4">
           <DialogHeader>
             <DialogTitle>{direction === "debito" ? "Modifica debito" : "Modifica credito"}</DialogTitle>
-            <DialogDescription>Aggiorna persona, obiettivo e scadenza.</DialogDescription>
+            <DialogDescription>Aggiorna titolo, persona, obiettivo e scadenza.</DialogDescription>
           </DialogHeader>
           <div className="grid grid-cols-2 gap-2">
             <Button
@@ -125,6 +139,21 @@ export function LedgerEditDialog({
               Credito
             </Button>
           </div>
+          <Field
+            label="Titolo"
+            error={
+              error === "Inserisci un titolo univoco." || error === "Questo titolo esiste già."
+                ? error
+                : undefined
+            }
+          >
+            <Input
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+              className={inputClass}
+              autoComplete="off"
+            />
+          </Field>
           <Field label="Chi" error={error === "Indica chi è coinvolto." ? error : undefined}>
             <PersonPicker value={person} onChange={setPerson} people={store.data.people} />
           </Field>

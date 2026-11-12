@@ -1,16 +1,27 @@
-import { createId } from "@/lib/id";
 import type { Database } from "sql.js";
 import { normalizePersonKey, normalizePersonName } from "@/lib/people";
+import { newUuid } from "@/lib/uuid";
+
+function newId() {
+  return newUuid();
+}
 
 function columnNames(db: Database, table: string) {
   const info = db.exec(`PRAGMA table_info(${table})`);
   return new Set((info[0]?.values ?? []).map((row) => String(row[1])));
 }
 
-function addColumnIfMissing(db: Database, table: string, column: string, spec: string) {
-  if (!columnNames(db, table).has(column)) {
-    db.run(`ALTER TABLE ${table} ADD COLUMN ${column} ${spec}`);
-  }
+function addColumnIfMissing(
+  db: Database,
+  columns: Set<string>,
+  table: string,
+  column: string,
+  spec: string
+) {
+  if (columns.has(column)) return false;
+  db.run(`ALTER TABLE ${table} ADD COLUMN ${column} ${spec}`);
+  columns.add(column);
+  return true;
 }
 
 function schemaVersion(db: Database) {
@@ -18,7 +29,9 @@ function schemaVersion(db: Database) {
   return Number(info[0]?.values?.[0]?.[0] ?? 1);
 }
 
+/** @returns true when the on-disk schema/data needed writes */
 export function applyPeopleSchema(db: Database) {
+  let dirty = false;
   db.run(`
     CREATE TABLE IF NOT EXISTS people (
       id TEXT PRIMARY KEY,
@@ -46,14 +59,69 @@ export function applyPeopleSchema(db: Database) {
       FOREIGN KEY (person_id) REFERENCES people(id) ON DELETE CASCADE
     );
   `);
-  addColumnIfMissing(db, "ledger", "person_id", "TEXT");
-  addColumnIfMissing(db, "expenses", "person_id", "TEXT");
 
-  if (schemaVersion(db) >= 2) return;
+  const ledgerColumns = columnNames(db, "ledger");
+  const expenseColumns = columnNames(db, "expenses");
+  const addedTitle = addColumnIfMissing(db, ledgerColumns, "ledger", "title", "TEXT");
+  dirty =
+    addColumnIfMissing(db, ledgerColumns, "ledger", "person_id", "TEXT") || dirty;
+  dirty =
+    addColumnIfMissing(db, ledgerColumns, "ledger", "related_ledger_id", "TEXT") || dirty;
+  dirty = addedTitle || dirty;
+  dirty =
+    addColumnIfMissing(db, ledgerColumns, "ledger", "associated_ledger_id", "TEXT") || dirty;
+  dirty =
+    addColumnIfMissing(db, expenseColumns, "expenses", "person_id", "TEXT") || dirty;
+  dirty =
+    addColumnIfMissing(db, expenseColumns, "expenses", "completed", "INTEGER NOT NULL DEFAULT 0") ||
+    dirty;
+
+  const version = schemaVersion(db);
+  // Skip title backfill on warm boots once schema is current.
+  if (addedTitle || version < 2) {
+    backfillLedgerTitles(db);
+    dirty = true;
+  }
+  if (version >= 2) return dirty;
 
   backfillPeople(db);
   backfillEvents(db);
   db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '2')");
+  return true;
+}
+
+function backfillLedgerTitles(db: Database) {
+  const stmt = db.prepare(
+    "SELECT id, user_id, person, direction, notes, title FROM ledger WHERE title IS NULL OR trim(title) = ''"
+  );
+  const used = new Map<string, Set<string>>();
+  const existing = db.prepare("SELECT user_id, title FROM ledger WHERE title IS NOT NULL AND trim(title) != ''");
+  while (existing.step()) {
+    const [userId, title] = existing.get();
+    const key = String(userId);
+    if (!used.has(key)) used.set(key, new Set());
+    used.get(key)!.add(String(title).trim().toLowerCase());
+  }
+  existing.free();
+
+  while (stmt.step()) {
+    const [id, userId, person, direction, notes] = stmt.get();
+    const uid = String(userId);
+    if (!used.has(uid)) used.set(uid, new Set());
+    const set = used.get(uid)!;
+    const base =
+      (notes && String(notes).trim()) ||
+      `${String(person || "Movimento").trim()} · ${String(direction) === "credito" ? "Credito" : "Debito"}`;
+    let candidate = base;
+    let n = 2;
+    while (set.has(candidate.toLowerCase())) {
+      candidate = `${base} (${n})`;
+      n += 1;
+    }
+    set.add(candidate.toLowerCase());
+    db.run("UPDATE ledger SET title = ? WHERE id = ?", [candidate, String(id)]);
+  }
+  stmt.free();
 }
 
 function backfillPeople(db: Database) {
@@ -81,7 +149,7 @@ function backfillPeople(db: Database) {
     const mapKey = `${row.userId}\0${key}`;
     let personId = existing.get(mapKey);
     if (!personId) {
-      personId = createId();
+      personId = newId();
       db.run(
         "INSERT INTO people (id, user_id, name, name_key, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
         [personId, row.userId, name, key, stamp, stamp]
@@ -108,7 +176,7 @@ function backfillEvents(db: Database) {
         (id, user_id, person_id, kind, direction, amount, ledger_id, expense_id, notes, occurred_at, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?)`,
       [
-        createId(),
+        newId(),
         String(userId),
         String(personId),
         String(direction),
@@ -127,7 +195,7 @@ function backfillEvents(db: Database) {
         `INSERT INTO person_events
           (id, user_id, person_id, kind, direction, amount, ledger_id, expense_id, notes, occurred_at, created_at)
          VALUES (?, ?, ?, 'versamento', ?, ?, ?, NULL, NULL, ?, ?)`,
-        [createId(), String(userId), String(personId), String(direction), paidAmount, String(id), paidAt, paidAt]
+        [newId(), String(userId), String(personId), String(direction), paidAmount, String(id), paidAt, paidAt]
       );
     }
   }

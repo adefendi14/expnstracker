@@ -35,13 +35,15 @@
   --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary: var(--primary);
+  --color-brand: var(--brand);
+  --color-brand-strong: var(--brand-strong);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-soft-foreground: var(--brand-soft-foreground);
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  --color-brand: var(--brand);
-  --color-brand-strong: var(--brand-strong);
-  --color-brand-soft: var(--brand-soft);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -84,61 +86,72 @@
   --sidebar-accent-foreground: #1c1c1e;
   --sidebar-border: #e4e2db;
   --sidebar-ring: #c9c6bd;
-  --brand: #d9487a;
-  --brand-strong: #c23668;
-  --brand-soft: color-mix(in oklab, var(--brand) 16%, transparent);
-  --glass: color-mix(in oklab, var(--card) 78%, transparent);
-  --glass-border: color-mix(in oklab, var(--foreground) 8%, transparent);
-  --theme-color: #f4f3ef;
+  --brand-pink: #e39e94;
+  --brand: #e39e94;
+  --brand-strong: #ce7f77;
+  --brand-foreground: #fffaf8;
+  --brand-soft: #f3e5e2;
+  --brand-soft-foreground: #6b3d38;
+  --glass-island: rgba(255, 255, 255, 0.52);
+  --glass-pill: rgba(255, 255, 255, 0.78);
+  --glass-border: rgba(255, 255, 255, 0.55);
+  --glass-pill-border: rgba(255, 255, 255, 0.7);
 }
 
 .dark {
-  --background: #121214;
-  --foreground: #f2f2f4;
-  --card: #1c1c1f;
-  --card-foreground: #f2f2f4;
-  --popover: #1c1c1f;
-  --popover-foreground: #f2f2f4;
-  --primary: #f2f2f4;
-  --primary-foreground: #121214;
-  --secondary: #2a2a2e;
-  --secondary-foreground: #f2f2f4;
-  --muted: #2a2a2e;
+  --background: #0f0f10;
+  --foreground: #f4f3ef;
+  --card: #1c1c1e;
+  --card-foreground: #f4f3ef;
+  --popover: #1c1c1e;
+  --popover-foreground: #f4f3ef;
+  --primary: #f4f3ef;
+  --primary-foreground: #0f0f10;
+  --secondary: #2c2c2e;
+  --secondary-foreground: #f4f3ef;
+  --muted: #2c2c2e;
   --muted-foreground: #a1a1a6;
-  --accent: #2a2a2e;
-  --accent-foreground: #f2f2f4;
-  --destructive: #f07167;
-  --border: #2f2f33;
-  --input: #2f2f33;
-  --ring: #5c5c62;
-  --chart-1: #3a3a3e;
-  --chart-2: #8e8e93;
-  --chart-3: #c7c7cc;
-  --chart-4: #e5e5ea;
-  --chart-5: #f2f2f4;
-  --sidebar: #1c1c1f;
-  --sidebar-foreground: #f2f2f4;
-  --sidebar-primary: #f2f2f4;
-  --sidebar-primary-foreground: #121214;
-  --sidebar-accent: #2a2a2e;
-  --sidebar-accent-foreground: #f2f2f4;
-  --sidebar-border: #2f2f33;
-  --sidebar-ring: #5c5c62;
-  --brand: #e86b94;
-  --brand-strong: #f08aad;
-  --brand-soft: color-mix(in oklab, var(--brand) 22%, transparent);
-  --glass: color-mix(in oklab, var(--card) 72%, transparent);
-  --glass-border: color-mix(in oklab, var(--foreground) 14%, transparent);
-  --theme-color: #121214;
+  --accent: #2c2c2e;
+  --accent-foreground: #f4f3ef;
+  --destructive: #ff6b61;
+  --border: #3a3a3c;
+  --input: #3a3a3c;
+  --ring: #636366;
+  --chart-1: #3a3a3c;
+  --chart-2: #636366;
+  --chart-3: #8e8e93;
+  --chart-4: #c7c7cc;
+  --chart-5: #f4f3ef;
+  --sidebar: #161618;
+  --sidebar-foreground: #f4f3ef;
+  --sidebar-primary: #f4f3ef;
+  --sidebar-primary-foreground: #0f0f10;
+  --sidebar-accent: #2c2c2e;
+  --sidebar-accent-foreground: #f4f3ef;
+  --sidebar-border: #3a3a3c;
+  --sidebar-ring: #636366;
+  --brand-pink: #e8b0a8;
+  --brand: #e8b0a8;
+  --brand-strong: #e39e94;
+  --brand-foreground: #2a1614;
+  --brand-soft: rgba(227, 158, 148, 0.18);
+  --brand-soft-foreground: #f0cfc9;
+  --glass-island: rgba(18, 18, 20, 0.55);
+  --glass-pill: rgba(255, 255, 255, 0.12);
+  --glass-border: rgba(255, 255, 255, 0.16);
+  --glass-pill-border: rgba(255, 255, 255, 0.24);
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
   }
   html {
     @apply font-sans;
-    -webkit-tap-highlight-color: transparent;
   }
   body {
     @apply bg-background text-foreground;
@@ -151,5 +164,151 @@
   select,
   textarea {
     touch-action: manipulation;
+  }
+  input,
+  textarea,
+  select,
+  [contenteditable="true"] {
+    -webkit-user-select: text;
+    user-select: text;
+    -webkit-touch-callout: default;
+  }
+}
+
+/* Sliding glass pill — soft, contained (no overshoot past the island) */
+.liquid-tab-pill {
+  transition:
+    transform 0.38s cubic-bezier(0.33, 0.9, 0.36, 1),
+    box-shadow 0.25s ease;
+  will-change: transform;
+}
+
+@keyframes confetti-fall {
+  0% {
+    transform: translate3d(0, -12vh, 0) rotate(0deg);
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(var(--confetti-drift, 18px), 110vh, 0) rotate(var(--confetti-rotate, 360deg));
+    opacity: 0;
+  }
+}
+
+@keyframes celebration-card-in {
+  0% {
+    opacity: 0;
+    transform: translateY(18px) scale(0.92);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes celebration-check-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.2);
+  }
+  55% {
+    opacity: 1;
+    transform: scale(1.12);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes celebration-label-in {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.confetti-piece {
+  animation-name: confetti-fall;
+  animation-timing-function: cubic-bezier(0.22, 0.61, 0.36, 1);
+  animation-fill-mode: forwards;
+  --confetti-drift: 24px;
+}
+
+.confetti-piece:nth-child(odd) {
+  --confetti-drift: -22px;
+}
+
+.confetti-piece:nth-child(3n) {
+  --confetti-drift: 12px;
+}
+
+.celebration-card {
+  animation: celebration-card-in 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.celebration-check {
+  animation: celebration-check-in 560ms cubic-bezier(0.22, 1, 0.36, 1) 80ms both;
+}
+
+.celebration-label {
+  animation: celebration-label-in 420ms cubic-bezier(0.22, 1, 0.36, 1) 220ms both;
+}
+
+/* Mobile main scroll: hide track until actively scrolling. */
+@media (max-width: 767px) {
+  .scrollbar-scroll-only {
+    scrollbar-width: none;
+  }
+
+  .scrollbar-scroll-only::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+  }
+
+  .scrollbar-scroll-only.is-scrolling {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklab, var(--foreground) 28%, transparent) transparent;
+  }
+
+  .scrollbar-scroll-only.is-scrolling::-webkit-scrollbar {
+    width: 3px;
+  }
+
+  .scrollbar-scroll-only.is-scrolling::-webkit-scrollbar-thumb {
+    border-radius: 9999px;
+    background: color-mix(in oklab, var(--foreground) 28%, transparent);
+  }
+
+  .scrollbar-scroll-only.is-scrolling::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .liquid-tab-pill {
+    transition-duration: 0.01ms !important;
+  }
+
+  .confetti-piece,
+  .celebration-card,
+  .celebration-check,
+  .celebration-label {
+    animation: none !important;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

@@ -9,7 +9,7 @@ export function EmptyState({
   className,
 }: {
   title: string;
-  description: string;
+  description?: string;
   action?: ReactNode;
   icon?: ReactNode;
   className?: string;
@@ -17,7 +17,7 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center rounded-3xl bg-card px-6 py-12 text-center ring-1 ring-foreground/8",
+        "flex flex-col items-center justify-center rounded-3xl bg-card px-6 py-12 text-center ring-1 ring-foreground/8 motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-95 motion-safe:duration-300",
         className
       )}
     >
@@ -27,7 +27,7 @@ export function EmptyState({
         </div>
       ) : null}
       <h2 className="text-base font-medium tracking-tight">{title}</h2>
-      <p className="mt-1.5 max-w-xs text-sm text-muted-foreground">{description}</p>
+      {description ? <p className="mt-1.5 max-w-xs text-sm text-muted-foreground">{description}</p> : null}
       {action ? <div className="mt-5">{action}</div> : null}
     </div>
   );
